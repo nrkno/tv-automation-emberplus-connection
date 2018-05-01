@@ -84,25 +84,34 @@ DeviceTree.prototype.connect = function (timeout = 2) {
 }
 
 DeviceTree.prototype.expand = function (node) {
-  let self = this
-  return self.getDirectory(node).then((res) => {
-    let children = node.getChildren()
-    if ((res === undefined) || (children === undefined) || (children === null)) {
-      if (DEBUG) { console.log('No more children for ', node) }
-      return
-    }
-    let p = []
-    for (let child of children) {
-      if (DEBUG) { console.log('Expanding child', child) }
-      p.push(
-        self.expand(child).catch((e) => {
-          // We had an error on some expansion
-          // let's save it on the child itself
-          child.error = e
+  // let self = this
+  return new Promise((resolve, reject) => {
+    this.getDirectory(node).then((res) => {
+      let children = node.getChildren()
+      if ((res === undefined) || (children === undefined) || (children === null)) {
+        if (DEBUG) { console.log('No more children for ', node) }
+        resolve(res)
+        return
+      }
+      let p = []
+      for (let child of children) {
+        if (DEBUG) { console.log('Expanding child', child) }
+        p.push(
+          this.expand(child).catch((e) => {
+            // We had an error on some expansion
+            // let's save it on the child itself
+            child.error = e
+          })
+        )
+      }
+      Promise.all(p)
+        .then((res) => {
+          resolve(res)
         })
-      )
-    }
-    return Promise.all(p)
+        .catch((e) => {
+          reject(e)
+        })
+    })
   })
 }
 
