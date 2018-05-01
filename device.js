@@ -53,7 +53,7 @@ function DeviceTree (host, port) {
 
 util.inherits(DeviceTree, EventEmitter)
 
-DecodeBuffer = function (packet) {
+var DecodeBuffer = function (packet) {
   var ber = new BER.Reader(packet)
   return ember.Root.decode(ber)
 }
@@ -168,7 +168,7 @@ DeviceTree.prototype.addRequest = function (cb) {
 }
 
 DeviceTree.prototype.clearTimeout = function () {
-  if (this.timeout != null) {
+  if (this.timeout !== null) {
     clearTimeout(this.timeout)
     this.timeout = null
   }
@@ -203,8 +203,7 @@ DeviceTree.prototype.handleRoot = function (root) {
     }
 
     // Fire callbacks once entire tree has been updated
-    for (var i = 0; i < callbacks.length; i++) {
-      // console.log('hr cb');
+    for (var i = 0; i < callbacks.length; i++) { // eslint-disable-line no-redeclare
       callbacks[i]()
     }
   }
@@ -351,21 +350,21 @@ DeviceTree.prototype.setValue = function (node, value) {
   })
 }
 
-function TreePath (path) {
-  this.identifiers = []
-  this.numbers = []
+// function TreePath (path) {
+//   this.identifiers = []
+//   this.numbers = []
 
-  if (path !== undefined) {
-    for (var i = 0; i < path.length; i++) {
-      if (Number.isInteger(path[i])) {
-        this.numbers.push(path[i])
-        this.identifiers.push(null)
-      } else {
-        this.identifiers.push(path[i])
-        this.numbers.push(null)
-      }
-    }
-  }
-}
+//   if (path !== undefined) {
+//     for (var i = 0; i < path.length; i++) {
+//       if (Number.isInteger(path[i])) {
+//         this.numbers.push(path[i])
+//         this.identifiers.push(null)
+//       } else {
+//         this.identifiers.push(path[i])
+//         this.numbers.push(null)
+//       }
+//     }
+//   }
+// }
 
 module.exports = {DeviceTree, DecodeBuffer}

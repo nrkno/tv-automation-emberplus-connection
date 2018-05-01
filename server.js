@@ -48,7 +48,7 @@ function TreeServer (host, port, tree) {
   })
 
   self.server.on('disconnected', () => {
-    self.emit('disconnected', client.remoteAddress())
+    self.emit('disconnected')
   })
 
   self.server.on('error', (e) => {
@@ -208,10 +208,10 @@ TreeServer.prototype.handleMatrixConnections = function (client, matrix, connect
     // Apply changes
 
     if ((connection.operation === undefined) ||
-            (connection.operation.value == ember.MatrixOperation.absolute)) {
+            (connection.operation.value === ember.MatrixOperation.absolute)) {
       matrix.connections[connection.target].setSources(connection.sources)
       emitType = 'matrix-change'
-    } else if (connection.operation == ember.MatrixOperation.connect) {
+    } else if (connection.operation === ember.MatrixOperation.connect) {
       matrix.connections[connection.target].connectSources(connection.sources)
       emitType = 'matrix-connect'
     } else { // Disconnect
@@ -244,7 +244,7 @@ TreeServer.prototype.handleMatrixConnections = function (client, matrix, connect
   }
 }
 
-const validateMatrixOperation = function (matrix, target, sources) {
+const validateMatrixOperation = function (matrix, target, sources, path) {
   if (matrix === undefined) {
     throw new Error(`matrix not found with path ${path}`)
   }
@@ -265,7 +265,7 @@ const validateMatrixOperation = function (matrix, target, sources) {
 const doMatrixOperation = function (server, path, target, sources, operation) {
   let matrix = server.tree.getElementByPath(path)
 
-  validateMatrixOperation(matrix, target, sources)
+  validateMatrixOperation(matrix, target, sources, path)
 
   let connection = new ember.MatrixConnection(target)
   connection.sources = sources
@@ -381,9 +381,8 @@ TreeServer.prototype.replaceElement = function (element) {
   }
   parent = parent._parent
   let children = parent.getChildren()
-  let newList = []
   for (let i = 0; i <= children.length; i++) {
-    if (children[i] && children[i].getPath() == path) {
+    if (children[i] && children[i].getPath() === path) {
       element._parent = parent // move it to new tree.
       children[i] = element
       let res = this.getResponse(element)

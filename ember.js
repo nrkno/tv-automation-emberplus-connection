@@ -10,7 +10,7 @@ module.exports.Subscribe = COMMAND_SUBSCRIBE
 module.exports.Unsubscribe = COMMAND_UNSUBSCRIBE
 module.exports.GetDirectory = COMMAND_GETDIRECTORY
 
-DEBUG = false
+var DEBUG = false
 
 module.exports.DEBUG = function (d) {
   DEBUG = d
@@ -38,7 +38,7 @@ Root.decode = function (ber) {
     tag = ber.peek()
     if (DEBUG) { console.log('Application 0 start') }
 
-    if (tag == BER.APPLICATION(11)) {
+    if (tag === BER.APPLICATION(11)) {
       if (DEBUG) { console.log('Application 11 start') }
       var seq = ber.getSequence(BER.APPLICATION(11))
       r.elements = []
@@ -224,7 +224,7 @@ TreeNode.prototype.getChildren = function () {
   return null
 }
 
-_getElementByPath = function (children, pathArray, path) {
+var _getElementByPath = function (children, pathArray, path) {
   if ((children === null) || (children === undefined) || (pathArray.length < 1)) {
     return null
   }
@@ -235,8 +235,8 @@ _getElementByPath = function (children, pathArray, path) {
   for (var i = 0; i < children.length; i++) {
     // console.log("looking at child", JSON.stringify(children[i]));
 
-    if ((children[i].path == currPath) ||
-            (children[i].number == number)) {
+    if ((children[i].path === currPath) ||
+            (children[i].number === number)) {
       if (path.length === 0) {
         return children[i]
       }
@@ -255,7 +255,7 @@ TreeNode.prototype.getElementByPath = function (path) {
   }
 
   var myPath = this.getPath()
-  if (path == myPath) {
+  if (path === myPath) {
     return this
   }
   var myPathArray = []
@@ -265,9 +265,9 @@ TreeNode.prototype.getElementByPath = function (path) {
   path = path.split('.')
 
   if (path.length > myPathArray.length) {
-    pathArray = path.splice(0, myPath.length + 1)
+    var pathArray = path.splice(0, myPath.length + 1)
     for (var i = 0; i < pathArray.length - 1; i++) {
-      if (pathArray[i] != myPathArray[i]) {
+      if (pathArray[i] !== myPathArray[i]) {
         return null
       }
     }
@@ -293,7 +293,7 @@ TreeNode.prototype.getElementByIdentifier = function (identifier) {
   if (children === null) return null
   for (var i = 0; i < children.length; i++) {
     if (children[i].contents !== undefined &&
-          children[i].contents.identifier == identifier) {
+          children[i].contents.identifier === identifier) {
       return children[i]
     }
   }
@@ -338,7 +338,7 @@ TreeNode.prototype.update = function (other) {
 TreeNode.prototype.getNodeByPath = function (client, path, callback) {
   var self = this
 
-  if (path.length == 0) {
+  if (path.length === 0) {
     callback(null, self)
     return
   }
@@ -354,7 +354,7 @@ TreeNode.prototype.getNodeByPath = function (client, path, callback) {
       child = node.getElement(path[0])
       if (child === null) {
         // console.log("inv:", path[0], self);
-        callback('invalid path')
+        callback(new Error('invalid path'))
       } else {
         child.getNodeByPath(client, path.slice(1), callback)
       }
@@ -404,33 +404,33 @@ function Element () {};
 
 Element.decode = function (ber) {
   var tag = ber.peek()
-  if (tag == BER.APPLICATION(1)) {
+  if (tag === BER.APPLICATION(1)) {
     if (DEBUG) { console.log('Parameter decode') }
     return Parameter.decode(ber)
-  } else if (tag == BER.APPLICATION(3)) {
+  } else if (tag === BER.APPLICATION(3)) {
     if (DEBUG) { console.log('Node decode') }
     return Node.decode(ber)
-  } else if (tag == BER.APPLICATION(2)) {
+  } else if (tag === BER.APPLICATION(2)) {
     if (DEBUG) { console.log('Command decode') }
     return Command.decode(ber)
-  } else if (tag == BER.APPLICATION(9)) {
+  } else if (tag === BER.APPLICATION(9)) {
     if (DEBUG) { console.log('QualifiedParameter decode') }
     return QualifiedParameter.decode(ber)
-  } else if (tag == BER.APPLICATION(10)) {
+  } else if (tag === BER.APPLICATION(10)) {
     if (DEBUG) { console.log('QualifiedNode decode') }
     return QualifiedNode.decode(ber)
-  } else if (tag == BER.APPLICATION(13)) {
+  } else if (tag === BER.APPLICATION(13)) {
     if (DEBUG) { console.log('MatrixNode decode') }
     return MatrixNode.decode(ber)
-  } else if (tag == BER.APPLICATION(17)) {
+  } else if (tag === BER.APPLICATION(17)) {
     if (DEBUG) { console.log('QualifiedMatrix decode') }
     return QualifiedMatrix.decode(ber)
-  } else if (tag == BER.APPLICATION(19)) {
+  } else if (tag === BER.APPLICATION(19)) {
     // Function
     throw new errors.UnimplementedEmberTypeError(tag)
-  } else if (tag == BER.APPLICATION(20)) {
+  } else if (tag === BER.APPLICATION(20)) {
     return QualifiedFunction.decode(ber)
-  } else if (tag == BER.APPLICATION(24)) {
+  } else if (tag === BER.APPLICATION(24)) {
     // Template
     throw new errors.UnimplementedEmberTypeError(tag)
   } else {
@@ -448,7 +448,7 @@ Element.decode = function (ber) {
 
 function QualifiedNode (path) {
   QualifiedNode.super_.call(this)
-  if (path != undefined) {
+  if (path !== undefined) {
     this.path = path
   }
 }
@@ -461,11 +461,11 @@ QualifiedNode.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       qn.path = seq.readRelativeOID(BER.EMBER_RELATIVE_OID) // 13 => relative OID
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       qn.contents = NodeContents.decode(seq)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       qn.children = []
       seq = seq.getSequence(BER.APPLICATION(4))
       while (seq.remain > 0) {
@@ -481,7 +481,7 @@ QualifiedNode.decode = function (ber) {
 }
 
 QualifiedNode.prototype.update = function (other) {
-  callbacks = QualifiedNode.super_.prototype.update.apply(this)
+  var callbacks = QualifiedNode.super_.prototype.update.apply(this)
   if ((other === undefined) && (other.contents !== undefined)) {
     // console.log("other: ", other.contents);
     for (var key in other.contents) {
@@ -575,11 +575,11 @@ Node.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       n.number = seq.readInt()
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       n.contents = NodeContents.decode(seq)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       seq = seq.getSequence(BER.APPLICATION(4))
       n.children = []
       while (seq.remain > 0) {
@@ -623,7 +623,7 @@ Node.prototype.encode = function (ber) {
 }
 
 Node.prototype.update = function (other) {
-  callbacks = Node.super_.prototype.update.apply(this)
+  var callbacks = Node.super_.prototype.update.apply(this)
   if ((other !== undefined) && (other.contents !== undefined)) {
     // console.log("other: ", other.contents);
     for (var key in other.contents) {
@@ -659,22 +659,22 @@ MatrixNode.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       m.number = seq.readInt()
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       m.contents = MatrixContents.decode(seq)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       m.children = []
       seq = seq.getSequence(BER.APPLICATION(4))
       while (seq.remain > 0) {
         var childSeq = seq.getSequence(BER.CONTEXT(0))
         m.addChild(Element.decode(childSeq))
       }
-    } else if (tag == BER.CONTEXT(3)) {
+    } else if (tag === BER.CONTEXT(3)) {
       m.targets = decodeTargets(seq)
-    } else if (tag == BER.CONTEXT(4)) {
+    } else if (tag === BER.CONTEXT(4)) {
       m.sources = decodeSources(seq)
-    } else if (tag == BER.CONTEXT(5)) {
+    } else if (tag === BER.CONTEXT(5)) {
       m.connections = {}
       seq = seq.getSequence(BER.EMBER_SEQUENCE)
       while (seq.remain > 0) {
@@ -721,7 +721,7 @@ MatrixNode.prototype.encode = function (ber) {
     ber.startSequence(BER.CONTEXT(3))
     ber.startSequence(BER.EMBER_SEQUENCE)
 
-    for (var i = 0; i < this.targets.length; i++) {
+    for (var i = 0; i < this.targets.length; i++) { // eslint-disable-line no-redeclare
       ber.startSequence(BER.CONTEXT(0))
       ber.startSequence(BER.APPLICATION(14))
       ber.startSequence(BER.CONTEXT(0))
@@ -739,7 +739,7 @@ MatrixNode.prototype.encode = function (ber) {
     ber.startSequence(BER.CONTEXT(4))
     ber.startSequence(BER.EMBER_SEQUENCE)
 
-    for (var i = 0; i < this.sources.length; i++) {
+    for (var i = 0; i < this.sources.length; i++) { // eslint-disable-line no-redeclare
       ber.startSequence(BER.CONTEXT(0))
       ber.startSequence(BER.APPLICATION(15))
       ber.startSequence(BER.CONTEXT(0))
@@ -769,7 +769,7 @@ MatrixNode.prototype.encode = function (ber) {
 }
 
 MatrixNode.prototype.update = function (other) {
-  callbacks = MatrixNode.super_.prototype.update.apply(this)
+  var callbacks = MatrixNode.super_.prototype.update.apply(this)
   MatrixUpdate(this, other)
   return callbacks
 }
@@ -801,27 +801,27 @@ MatrixContents.decode = function (ber) {
     // console.log("Next tag", tag, ber.buffer);
     var seq = ber.getSequence(tag)
 
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       mc.identifier = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       mc.description = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       mc.type = MatrixType.get(seq.readInt())
-    } else if (tag == BER.CONTEXT(3)) {
+    } else if (tag === BER.CONTEXT(3)) {
       mc.mode = MatrixMode.get(seq.readInt())
-    } else if (tag == BER.CONTEXT(4)) {
+    } else if (tag === BER.CONTEXT(4)) {
       mc.targetCount = seq.readInt()
-    } else if (tag == BER.CONTEXT(5)) {
+    } else if (tag === BER.CONTEXT(5)) {
       mc.sourceCount = seq.readInt()
-    } else if (tag == BER.CONTEXT(6)) {
+    } else if (tag === BER.CONTEXT(6)) {
       mc.maximumTotalConnects = seq.readInt()
-    } else if (tag == BER.CONTEXT(7)) {
+    } else if (tag === BER.CONTEXT(7)) {
       mc.maximumConnectsPerTarget = seq.readInt()
-    } else if (tag == BER.CONTEXT(8)) {
+    } else if (tag === BER.CONTEXT(8)) {
       mc.parametersLocation = seq.readInt()
-    } else if (tag == BER.CONTEXT(9)) {
+    } else if (tag === BER.CONTEXT(9)) {
       mc.gainParameterNumber = seq.readInt()
-    } else if (tag == BER.CONTEXT(10)) {
+    } else if (tag === BER.CONTEXT(10)) {
       mc.labels = []
       // console.log("\n\nLABEL\n\n",seq.buffer);
       seq = seq.getSequence(BER.EMBER_SEQUENCE)
@@ -830,9 +830,9 @@ MatrixContents.decode = function (ber) {
         mc.labels.push(Label.decode(lSeq))
       }
       // console.log(mc);
-    } else if (tag == BER.CONTEXT(11)) {
+    } else if (tag === BER.CONTEXT(11)) {
       mc.schemaIdentifiers = seq.readInt()
-    } else if (tag == BER.CONTEXT(12)) {
+    } else if (tag === BER.CONTEXT(12)) {
       mc.templateReference = seq.readRelativeOID(BER.EMBER_RELATIVE_OID)
     } else {
       throw new errors.UnimplementedEmberTypeError(tag)
@@ -918,7 +918,7 @@ MatrixContents.prototype.encode = function (ber) {
   ber.endSequence()
 }
 
-decodeTargets = function (ber) {
+var decodeTargets = function (ber) {
   let targets = []
 
   ber = ber.getSequence(BER.EMBER_SEQUENCE)
@@ -933,7 +933,7 @@ decodeTargets = function (ber) {
   return targets
 }
 
-decodeSources = function (ber) {
+var decodeSources = function (ber) {
   let sources = []
 
   ber = ber.getSequence(BER.EMBER_SEQUENCE)
@@ -1028,15 +1028,15 @@ MatrixConnection.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       c.target = seq.readInt()
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       // sources
       var sources = seq.readRelativeOID(BER.EMBER_RELATIVE_OID)
       c.sources = sources.split('.')
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       c.operation = MatrixOperation.get(seq.readInt())
-    } else if (tag == BER.CONTEXT(3)) {
+    } else if (tag === BER.CONTEXT(3)) {
       c.disposition = MatrixDisposition.get(seq.readInt())
     } else {
       throw new errors.UnimplementedEmberTypeError(tag)
@@ -1086,9 +1086,9 @@ Label.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       l.basePath = seq.readRelativeOID(BER.EMBER_RELATIVE_OID)
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       l.description = seq.readString(BER.EMBER_STRING)
     } else {
       throw new errors.UnimplementedEmberTypeError(tag)
@@ -1146,7 +1146,7 @@ module.exports.MatrixMode = MatrixMode
 
 function QualifiedMatrix (path) {
   QualifiedMatrix.super_.call(this)
-  if (path != undefined) {
+  if (path !== undefined) {
     this.path = path
   }
 }
@@ -1159,22 +1159,22 @@ QualifiedMatrix.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       qm.path = seq.readRelativeOID(BER.EMBER_RELATIVE_OID) // 13 => relative OID
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       qm.contents = MatrixContents.decode(seq)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       qm.children = []
       seq = seq.getSequence(BER.APPLICATION(4))
       while (seq.remain > 0) {
         var nodeSeq = seq.getSequence(BER.CONTEXT(0))
         qm.addChild(Element.decode(nodeSeq))
       }
-    } else if (tag == BER.CONTEXT(3)) {
+    } else if (tag === BER.CONTEXT(3)) {
       qm.targets = decodeTargets(seq)
-    } else if (tag == BER.CONTEXT(4)) {
+    } else if (tag === BER.CONTEXT(4)) {
       qm.sources = decodeSources(seq)
-    } else if (tag == BER.CONTEXT(5)) {
+    } else if (tag === BER.CONTEXT(5)) {
       qm.connections = {}
       seq = seq.getSequence(BER.EMBER_SEQUENCE)
       while (seq.remain > 0) {
@@ -1226,7 +1226,7 @@ function MatrixUpdate (matrix, newMatrix) {
 }
 
 QualifiedMatrix.prototype.update = function (other) {
-  callbacks = QualifiedMatrix.super_.prototype.update.apply(this)
+  var callbacks = QualifiedMatrix.super_.prototype.update.apply(this)
   MatrixUpdate(this, other)
   return callbacks
 }
@@ -1304,7 +1304,7 @@ QualifiedMatrix.prototype.encode = function (ber) {
   if (this.targets !== undefined) {
     ber.startSequence(BER.CONTEXT(3))
 
-    for (var i = 0; i < this.targets.length; i++) {
+    for (var i = 0; i < this.targets.length; i++) { // eslint-disable-line no-redeclare
       ber.startSequence(BER.CONTEXT(0))
       ber.startSequence(BER.APPLICATION(14))
       ber.startSequence(BER.CONTEXT(0))
@@ -1320,7 +1320,7 @@ QualifiedMatrix.prototype.encode = function (ber) {
   if (this.sources !== undefined) {
     ber.startSequence(BER.CONTEXT(4))
 
-    for (var i = 0; i < this.sources.length; i++) {
+    for (var i = 0; i < this.sources.length; i++) { // eslint-disable-line no-redeclare
       ber.startSequence(BER.CONTEXT(0))
       ber.startSequence(BER.APPLICATION(15))
       ber.startSequence(BER.CONTEXT(0))
@@ -1359,11 +1359,11 @@ module.exports.QualifiedMatrix = QualifiedMatrix
 function FunctionContent () {
 }
 
-decodeTupleDescription = function (ber) {
+var decodeTupleDescription = function (ber) {
   var tuple = {}
   ber = ber.getSequence(BER.APPLICATION(21))
   while (ber.remain > 0) {
-    tag = ber.peek()
+    var tag = ber.peek()
     var seq = ber.getSequence(tag)
     if (tag === BER.CONTEXT(0)) {
       tuple.type = seq.readInt()
@@ -1374,7 +1374,7 @@ decodeTupleDescription = function (ber) {
   return tuple
 }
 
-encodeTupleDescription = function (tuple, ber) {
+var encodeTupleDescription = function (tuple, ber) {
   ber.startSequence(BER.APPLICATION(21))
   if (tuple.type !== undefined) {
     ber.startSequence(BER.CONTEXT(0))
@@ -1395,11 +1395,11 @@ FunctionContent.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       fc.identifier = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       fc.description = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       fc.arguments = []
       seq = seq.getSequence(BER.EMBER_SEQUENCE)
       while (seq.remain > 0) {
@@ -1409,16 +1409,16 @@ FunctionContent.decode = function (ber) {
           fc.arguments.push(decodeTupleDescription(dataSeq))
         }
       }
-    } else if (tag == BER.CONTEXT(3)) {
+    } else if (tag === BER.CONTEXT(3)) {
       fc.result = []
       while (seq.remain > 0) {
         tag = seq.peek()
-        var dataSeq = seq.getSequence(tag)
+        var dataSeq = seq.getSequence(tag) // eslint-disable-line no-redeclare
         if (tag === BER.CONTEXT(0)) {
           fc.result.push(decodeTupleDescription(dataSeq))
         }
       }
-    } else if (tag == BER.CONTEXT(4)) {
+    } else if (tag === BER.CONTEXT(4)) {
       fc.templateReference = seq.readRelativeOID(BER.EMBER_RELATIVE_OID)
     } else {
       throw new errors.UnimplementedEmberTypeError(tag)
@@ -1458,7 +1458,7 @@ FunctionContent.prototype.encode = function (ber) {
   if (this.result !== undefined) {
     ber.startSequence(BER.CONTEXT(3))
     ber.startSequence(BER.EMBER_SEQUENCE)
-    for (var i = 0; i < this.result; i++) {
+    for (var i = 0; i < this.result; i++) { // eslint-disable-line no-redeclare
       ber.startSequence(BER.CONTEXT(0))
       encodeTupleDescription(this.result[i], ber)
       ber.endSequence()
@@ -1478,7 +1478,7 @@ module.exports.FunctionContent = FunctionContent
 
 function QualifiedFunction (path) {
   QualifiedFunction.super_.call(this)
-  if (path != undefined) {
+  if (path !== undefined) {
     this.path = path
   }
 }
@@ -1491,11 +1491,11 @@ QualifiedFunction.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       qf.path = seq.readRelativeOID(BER.EMBER_RELATIVE_OID) // 13 => relative OID
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       qf.contents = FunctionContent.decode(seq)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       qf.children = []
       seq = seq.getSequence(BER.APPLICATION(4))
       while (seq.remain > 0) {
@@ -1510,7 +1510,7 @@ QualifiedFunction.decode = function (ber) {
 }
 
 QualifiedFunction.prototype.update = function (other) {
-  callbacks = QualifiedFunction.super_.prototype.update.apply(this)
+  var callbacks = QualifiedFunction.super_.prototype.update.apply(this)
   if ((other !== undefined) && (other.contents !== undefined)) {
     // console.log("other: ", other.contents);
     for (var key in other.contents) {
@@ -1600,15 +1600,15 @@ NodeContents.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       nc.identifier = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       nc.description = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       nc.isRoot = seq.readBoolean()
-    } else if (tag == BER.CONTEXT(3)) {
+    } else if (tag === BER.CONTEXT(3)) {
       nc.isOnline = seq.readBoolean()
-    } else if (tag == BER.CONTEXT(4)) {
+    } else if (tag === BER.CONTEXT(4)) {
       nc.schemaIdentifiers = seq.readString(BER.EMBER_STRING)
     } else {
       throw new errors.UnimplementedEmberTypeError(tag)
@@ -1683,11 +1683,11 @@ Command.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       c.number = seq.readInt()
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       c.fieldFlags = FieldFlags.get(seq.readInt())
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       c.invocation = Invocation.decode(ber)
     } else {
       // TODO: options
@@ -1736,10 +1736,10 @@ Invocation.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       invocation.invocationId = seq.readInt()
     }
-    if (tag == BER.CONTEXT(1)) {
+    if (tag === BER.CONTEXT(1)) {
       invocation.arguments = []
       let seq = ber.getSequence(BER.EMBER_SEQUENCE)
       while (seq.remain > 0) {
@@ -1791,14 +1791,14 @@ QualifiedParameter.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       qp.path = seq.readRelativeOID(BER.EMBER_RELATIVE_OID) // 13 => relative OID
       // console.log("Decoded path",qp.path);
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       // console.log("Decoding content");
       qp.contents = ParameterContents.decode(seq)
       // console.log("Decoded content",qp.contents);
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       qp.children = []
       // console.log("Decoding children");
       seq = seq.getSequence(BER.APPLICATION(4))
@@ -1844,7 +1844,7 @@ QualifiedParameter.prototype.encode = function (ber) {
 }
 
 QualifiedParameter.prototype.update = function (other) {
-  callbacks = QualifiedParameter.super_.prototype.update.apply(this)
+  var callbacks = QualifiedParameter.super_.prototype.update.apply(this)
   if ((other !== undefined) && (other.contents !== undefined)) {
     // console.log("other: ", other.contents);
     for (var key in other.contents) {
@@ -1921,11 +1921,11 @@ Parameter.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       p.number = seq.readInt()
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       p.contents = ParameterContents.decode(seq)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       seq = seq.getSequence(BER.APPLICATION(4))
       p.children = []
       while (seq.remain > 0) {
@@ -1977,7 +1977,7 @@ Parameter.prototype.setValue = function (value, callback) {
 }
 
 Parameter.prototype.update = function (other) {
-  callbacks = Parameter.super_.prototype.update.apply(this)
+  var callbacks = Parameter.super_.prototype.update.apply(this)
   // console.log('update', this.getPath());
   // console.log(callbacks);
   if ((other !== undefined) && (other.contents !== undefined)) {
@@ -2027,43 +2027,43 @@ ParameterContents.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       pc.identifier = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       pc.description = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(2)) {
+    } else if (tag === BER.CONTEXT(2)) {
       pc.value = seq.readValue()
-    } else if (tag == BER.CONTEXT(3)) {
+    } else if (tag === BER.CONTEXT(3)) {
       pc.minimum = seq.readValue()
-    } else if (tag == BER.CONTEXT(4)) {
+    } else if (tag === BER.CONTEXT(4)) {
       pc.maximum = seq.readValue()
-    } else if (tag == BER.CONTEXT(5)) {
+    } else if (tag === BER.CONTEXT(5)) {
       pc.access = ParameterAccess.get(seq.readInt())
-    } else if (tag == BER.CONTEXT(6)) {
+    } else if (tag === BER.CONTEXT(6)) {
       pc.format = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(7)) {
+    } else if (tag === BER.CONTEXT(7)) {
       pc.enumeration = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(8)) {
+    } else if (tag === BER.CONTEXT(8)) {
       pc.factor = seq.readInt()
-    } else if (tag == BER.CONTEXT(9)) {
+    } else if (tag === BER.CONTEXT(9)) {
       pc.isOnline = seq.readBoolean()
-    } else if (tag == BER.CONTEXT(10)) {
+    } else if (tag === BER.CONTEXT(10)) {
       pc.formula = seq.readString(BER.EMBER_STRING)
-    } else if (tag == BER.CONTEXT(11)) {
+    } else if (tag === BER.CONTEXT(11)) {
       pc.step = seq.readInt()
-    } else if (tag == BER.CONTEXT(12)) {
+    } else if (tag === BER.CONTEXT(12)) {
       pc.default = seq.readValue()
-    } else if (tag == BER.CONTEXT(13)) {
+    } else if (tag === BER.CONTEXT(13)) {
       pc.type = ParameterType.get(seq.readInt())
-    } else if (tag == BER.CONTEXT(14)) {
+    } else if (tag === BER.CONTEXT(14)) {
       pc.streamIdentifier = seq.readInt()
-    } else if (tag == BER.CONTEXT(15)) {
+    } else if (tag === BER.CONTEXT(15)) {
       pc.enumMap = StringIntegerCollection.decode(seq)
-    } else if (tag == BER.CONTEXT(16)) {
+    } else if (tag === BER.CONTEXT(16)) {
       pc.streamDescriptor = StreamDescription.decode(seq)
-    } else if (tag == BER.CONTEXT(17)) {
+    } else if (tag === BER.CONTEXT(17)) {
       pc.schemaIdentifiers = seq.readString(BER.EMBER_STRING)
-    } else if (tag == null) {
+    } else if (tag === null) {
       break
     } else {
       throw new errors.UnimplementedEmberTypeError(tag)
@@ -2126,9 +2126,9 @@ StringIntegerCollection.decode = function (ber) {
     while (seq.remain > 0) {
       var tag = seq.peek()
       var dataSeq = seq.getSequence(tag)
-      if (tag == BER.CONTEXT(0)) {
+      if (tag === BER.CONTEXT(0)) {
         entryString = dataSeq.readString(BER.EMBER_STRING)
-      } else if (tag == BER.CONTEXT(1)) {
+      } else if (tag === BER.CONTEXT(1)) {
         entryInteger = dataSeq.readInt()
       } else {
         throw new errors.UnimplementedEmberTypeError(tag)
@@ -2192,9 +2192,9 @@ StreamDescription.decode = function (ber) {
   while (ber.remain > 0) {
     var tag = ber.peek()
     var seq = ber.getSequence(tag)
-    if (tag == BER.CONTEXT(0)) {
+    if (tag === BER.CONTEXT(0)) {
       sd.format = StreamFormat.get(seq.readInt())
-    } else if (tag == BER.CONTEXT(1)) {
+    } else if (tag === BER.CONTEXT(1)) {
       sd.offset = seq.readInt()
     } else {
       throw new errors.UnimplementedEmberTypeError(tag)

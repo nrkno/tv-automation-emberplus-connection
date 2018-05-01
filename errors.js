@@ -10,11 +10,11 @@ function UnimplementedEmberTypeError (tag) {
   var identifier = (tag & 0xC0) >> 6
   var value = (tag & 0x1F).toString()
   var tagStr = tag.toString()
-  if (identifier == 0) {
+  if (identifier === 0) {
     tagStr = '[UNIVERSAL ' + value + ']'
-  } else if (identifier == 1) {
+  } else if (identifier === 1) {
     tagStr = '[APPLICATION ' + value + ']'
-  } else if (identifier == 2) {
+  } else if (identifier === 2) {
     tagStr = '[CONTEXT ' + value + ']'
   } else {
     tagStr = '[PRIVATE ' + value + ']'

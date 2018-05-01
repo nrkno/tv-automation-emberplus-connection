@@ -73,10 +73,6 @@ function ExtendedReader (data) {
 util.inherits(ExtendedReader, BER.Reader)
 module.exports.Reader = ExtendedReader
 
-readBlock = function (ber) {
-
-}
-
 ExtendedReader.prototype.getSequence = function (tag) {
   var buf = this.readString(tag, true)
   return new ExtendedReader(buf)
@@ -85,15 +81,15 @@ ExtendedReader.prototype.getSequence = function (tag) {
 ExtendedReader.prototype.readValue = function () {
   var tag = this.peek()
 
-  if (tag == EMBER_STRING) {
+  if (tag === EMBER_STRING) {
     return this.readString(EMBER_STRING)
-  } else if (tag == EMBER_INTEGER) {
+  } else if (tag === EMBER_INTEGER) {
     return this.readInt()
-  } else if (tag == EMBER_REAL) {
+  } else if (tag === EMBER_REAL) {
     return this.readReal()
-  } else if (tag == EMBER_BOOLEAN) {
+  } else if (tag === EMBER_BOOLEAN) {
     return this.readBoolean()
-  } else if (tag == EMBER_OCTETSTRING) {
+  } else if (tag === EMBER_OCTETSTRING) {
     return this.readString(UNIVERSAL(4), true)
   } else if (tag === EMBER_RELATIVE_OID) {
     return this.readOID(EMBER_RELATIVE_OID)
@@ -114,7 +110,7 @@ ExtendedReader.prototype.readReal = function (tag) {
 
   var buf = this.readString(b, true)
 
-  if (buf.length == 0) {
+  if (buf.length === 0) {
     return 0
   }
 
@@ -123,11 +119,11 @@ ExtendedReader.prototype.readReal = function (tag) {
   var preamble = buf.readUInt8(0)
   var o = 1
 
-  if (buf.length == 1 && preamble == 0x40) {
+  if (buf.length === 1 && preamble === 0x40) {
     return Infinity
-  } else if (buf.length == 1 && preamble == 0x41) {
+  } else if (buf.length === 1 && preamble === 0x41) {
     return -Infinity
-  } else if (buf.length == 1 && preamble == 0x42) {
+  } else if (buf.length === 1 && preamble === 0x42) {
     return NaN
   }
 
@@ -215,14 +211,14 @@ ExtendedWriter.prototype.writeReal = function (value, tag) {
   }
 
   this.writeByte(tag)
-  if (value == 0) {
+  if (value === 0) {
     this.writeLength(0)
     return
-  } else if (value == Infinity) {
+  } else if (value === Infinity) {
     this.writeLength(1)
     this.writeByte(0x40)
     return
-  } else if (value == -Infinity) {
+  } else if (value === -Infinity) {
     this.writeLength(1)
     this.writeByte(0x41)
     return
@@ -241,8 +237,8 @@ ExtendedWriter.prototype.writeReal = function (value, tag) {
     Long.fromBits(0x00000000, 0x00100000, true))
   var exponent = bits.and(Long.fromBits(0x00000000, 0x7FF00000, true)).shru(52)
     .sub(1023).toSigned()
-  while (significand.and(0xFF) == 0) { significand = significand.shru(8) }
-  while (significand.and(0x01) == 0) { significand = significand.shru(1) }
+  while (significand.and(0xFF) === 0) { significand = significand.shru(8) }
+  while (significand.and(0x01) === 0) { significand = significand.shru(1) }
 
   // console.log(significand, exponent);
   exponent = exponent.toNumber()
@@ -262,9 +258,8 @@ ExtendedWriter.prototype.writeReal = function (value, tag) {
   }
 
   var mask = Long.fromBits(0x00000000, 0xFF000000, true)
-  for (var i = 0; i < significand.size; i++) {
-    var b = significand.value.and(mask)
-    // console.log("masked:", b);
+  for (let i = 0; i < significand.size; i++) { // eslint-disable-line no-redeclare
+    significand.value.and(mask)
     this.writeByte(significand.value.and(mask).shru(56).toNumber())
     significand.value = significand.value.shl(8)
   }
