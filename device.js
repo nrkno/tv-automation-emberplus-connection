@@ -7,7 +7,7 @@ const errors = require('./errors.js');
 
 const DEBUG = false;
 
-function DeviceTree(host, port) {
+function DeviceTree(host, port = 9000) {
     DeviceTree.super_.call(this);
     var self = this;
     self._debug = false;
@@ -43,8 +43,14 @@ function DeviceTree(host, port) {
     });
 
     self.client.on('emberTree', (root) => {
-        self.handleRoot(root);
-        if (self._debug) {console.log("Received root", root);}
+        if(root instanceof ember.InvocationResult) {
+            self.emit('invocationResult', root)
+            if (self._debug) {console.log("Received InvocationResult", root);}
+        }else{
+            self.handleRoot(root);
+            if (self._debug) {console.log("Received root", root);}
+        }
+
         if (self.callback) {
             self.callback(undefined, root);
         }
@@ -139,6 +145,35 @@ DeviceTree.prototype.getDirectory = function(qnode) {
             self.client.sendBERNode(qnode.getDirectory());
         });
     });
+}
+
+DeviceTree.prototype.invokeFunction = function(fnNode, params) {
+    var self = this
+    return new Promise((resolve, reject) => {
+        self.addRequest((error) => {
+            if (error) {
+                reject(error);
+                self.finishRequest();
+                return;
+            }
+
+            let cb = (error, result) => {
+                self.clearTimeout(); 
+                if (error) {
+                    reject(error);
+                }
+                else {
+                    if (DEBUG) {console.log("InvocationResult", result);}
+                    resolve(result); 
+                }
+                self.finishRequest();
+            };
+
+            if (self._debug) {console.log("Invocking function", fnNode);}
+            self.callback = cb;
+            self.client.sendBERNode(fnNode.invoke(params));
+        });
+    })
 }
 
 DeviceTree.prototype.disconnect = function() {
