@@ -114,7 +114,6 @@ module.exports.Root = Root;
 function TreeNode() {
     Object.defineProperty(this, '_parent', {value: null, enumerable: false, writable: true});
     Object.defineProperty(this, '_directoryCallbacks', {value: [], enumerable: false, writable: true});
-    Object.defineProperty(this, '_callbacks', {value: [], enumerable: false, writable: true});
 }
 
 TreeNode.prototype.addChild = function(child) {
@@ -147,12 +146,6 @@ TreeNode.prototype.isQualified = function() {
 TreeNode.prototype.isStream = function() {
     return this.contents !== undefined &&
         this.contents.streamDescriptor !== undefined;
-}
-
-TreeNode.prototype.addCallback = function(callback) {
-    if(this._callbacks.indexOf(callback) < 0) {
-        this._callbacks.push(callback);
-    }
 }
 
 TreeNode.prototype.cancelCallbacks = function() {
@@ -330,16 +323,6 @@ TreeNode.prototype.update = function(other) {
         })(self._directoryCallbacks.shift());
     }
     //}
-
-    for(var i=0; i<self._callbacks.length; i++) {
-        (function(cb) {
-            callbacks.push(() => {
-                //console.log(self.constructor.name, "cb", self.getPath());
-                cb(self)
-            });
-        })(self._callbacks[i]);
-    }
-
     return callbacks;
 }
 
@@ -652,12 +635,6 @@ Node.prototype.update = function(other) {
         }
     }
     return callbacks;
-}
-
-Node.prototype.subscribe = function(callback) {
-    if(this._callbacks.indexOf(callback) < 0) {
-        this._callbacks.push(callback);
-    }
 }
 
 module.exports.Node = Node;
