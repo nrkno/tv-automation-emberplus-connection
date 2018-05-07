@@ -1957,7 +1957,7 @@ QualifiedParameter.prototype.setValue = function(value, callback) {
     let r = new Root();
     let qp = new QualifiedParameter(this.path);
     r.addElement(qp);
-    qp.contents = new ParameterContents(value);
+    qp.contents = (value instanceof ParameterContents) ? value : new ParameterContents(value);
     return r;
 }
 
@@ -2033,7 +2033,7 @@ Parameter.prototype.setValue = function(value, callback) {
     }
     
     return this.getTreeBranch(undefined, (m) => {
-        m.contents = new ParameterContents(value);
+        m.contents = (value instanceof ParameterContents) ? value : new ParameterContents(value);
     });
 }
 
