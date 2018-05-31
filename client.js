@@ -141,7 +141,7 @@ class S101Socket extends EventEmitter {
         }
     }
 
-    _sendBER () {
+    sendBER (data) {
         var self = this;
         if (self.isConnected()) {
             var frames = self.codec.encodeBER(data);
@@ -151,7 +151,7 @@ class S101Socket extends EventEmitter {
         }
     }
 
-    _sendBERNode () {
+    sendBERNode (node) {
         var self=this;
         if (!node) return;
         var writer = new BER.Writer();
