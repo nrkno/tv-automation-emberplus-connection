@@ -64,7 +64,8 @@ class S101Socket extends EventEmitter {
                     this.emit('emberTree', root)
                 }
             } catch (e) {
-                winston.log(e)
+                this.emit('error', e)
+                // winston.log(e)
             }
         })
     }
@@ -87,7 +88,13 @@ class S101Socket extends EventEmitter {
                     this.socket = new net.Socket()
                     this.socket.on('close', (hadError) => this._onClose(hadError))
                     this.socket.on('connect', () => this._onConnect())
-                    this.socket.on('data', (data) => this.codec.dataIn(data))
+                    this.socket.on('data', (data) => {
+                        try {
+                            this.codec.dataIn(data)
+                        } catch (e) {
+                            this.emit('error', e)
+                        }
+                    })
                     this.socket.on('error', (error) => this._onError(error))
                 }
 
@@ -194,7 +201,7 @@ class S101Socket extends EventEmitter {
     }
 
     _onError (error) {
-        winston.error(error) // @todo...
+        this.emit('error', error)
     }
 
     _onClose (hadError) {

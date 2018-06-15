@@ -100,17 +100,13 @@ S101Codec.prototype.handleFrame = function(frame) {
     var self = this;
     //console.log(frame.toBuffer());
     if(!validateFrame(frame.toBuffer())) {
-        winston.error('dropping frame of length %d with invalid CRC', 
-            frame.length);
-        return;
+        throw Error('dropping frame of length ' + frame.length + ' with invalid CRC ');
     }
 
     var slot = frame.readUInt8();
     var message = frame.readUInt8();
     if(slot != SLOT || message != MSG_EMBER) {
-        winston.error('dropping frame of length %d (not an ember frame; slot=%d, msg=%d)',
-            frame.length, slot, message);
-        return;
+        throw Error('dropping frame of length ' + frame.length + ' (not an ember frame; slot=' + slot + ', msg=' + message + ')');
     }
 
     var command = frame.readUInt8();
@@ -123,9 +119,7 @@ S101Codec.prototype.handleFrame = function(frame) {
     } else if(command == CMD_EMBER) {
         self.handleEmberFrame(frame);
     } else {
-        winston.error('dropping frame of length %d with unknown command %d',
-            frame.length, command);
-        return;
+        throw Error('dropping frame of length ' + frame.length + ' with unknown command ' + command);
     }
 }
 
@@ -137,12 +131,11 @@ S101Codec.prototype.handleEmberFrame = function(frame) {
     var appBytes = frame.readUInt8();
 
     if(version != VERSION) {
-        winston.warn('Unknown ember frame version %d', version);
+        winston.warn('Unknown ember frame version ' + version);
     }
 
     if(dtd != DTD_GLOW) {
-        winston.error('Dropping frame with non-Glow DTD');
-        return;
+        throw Error('Dropping frame with non-Glow DTD');
     }
 
     var glowMinor = 0;
