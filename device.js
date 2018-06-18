@@ -325,7 +325,9 @@ DeviceTree.prototype.getNodeByPath = function(path) {
     if(typeof path === 'string') {
         path = path.split('.');
         for (var i = 0; i < path.length; i++) {
-            path[i] = parseInt(path[i])
+            if(!isNaN(path[i])) {
+                path[i] = parseInt(path[i])
+            }
         }
     }
 

@@ -366,7 +366,7 @@ TreeNode.prototype.getNodeByPath = function(client, path, callback) {
             child = node.getElement(path[0]);
             if(child === null) {
                 //console.log("inv:", path[0], self);
-                callback('invalid path');
+                callback('invalid path ' + path[0]);
                 return;
             } else {
                 child.getNodeByPath(client, path.slice(1), callback);
