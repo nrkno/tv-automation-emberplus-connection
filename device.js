@@ -323,7 +323,7 @@ DeviceTree.prototype.handleNode = function(parent, node) {
 DeviceTree.prototype.getNodeByPath = function(path) {
     var self=this;
     if(typeof path === 'string') {
-        path = path.split('/');
+        path = path.split('.');
         for (var i = 0; i < path.length; i++) {
             path[i] = parseInt(path[i])
         }
