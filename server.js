@@ -546,4 +546,67 @@ TreeServer.JSONtoTree = function(obj, isQualified = true) {
     return tree;
 }
 
+const toJSON = function(node) {
+    let res = {};
+
+    if (node.number) {
+        res.number = node.number
+    }
+    if (node.path) {
+        res.path = node.path;
+    }
+    if (node.contents) {
+        for(let prop in node.contents) {
+            if (node.contents.hasOwnProperty(prop)) {
+                let type = typeof node.contents[prop];
+                if ((type === "string") || (type === "number")) {
+                    res[prop] = node.contents[prop];
+                }
+                else if (node.contents[prop].value !== undefined) {
+                    res[prop] = node.contents[prop].value;
+                }
+                else {
+                    console.log(prop, node.contents[prop]);
+                    res[prop] = node.contents[prop];
+                }
+            }
+        }
+    }
+    if (node.isMatrix()) {
+        if (node.targets) {
+            res.targets = node.targets.slice(0);
+        }
+        if (node.sources) {
+            res.sources = node.sources.slice(0);
+        }
+        if (node.connections) {
+            res.connections = {};
+            for (let target in connections) {
+                if (connections.hasOwnProperty(target)) {
+                    res.connections[target] = {target: target, sources: []};
+                    if (connections[target].sources) {
+                        res.connections[target].sources = connections[target].sources.slice(0);
+                    }
+                }
+            }
+
+        }
+    }
+    let children = node.getChildren();
+    if (children) {
+        res.children = [];
+        for(let child of children) {
+            res.children.push(toJSON(child));
+        }
+    }
+    return res;
+};
+
+TreeServer.prototype.toJSON = function() {
+    if ((!this.tree) || (!this.tree.elements) || (this.tree.elements.length == 0)) {
+        return [];
+    }
+    return [].push(toJSON(this.tree.elements[0]));
+};
+
 module.exports = TreeServer;

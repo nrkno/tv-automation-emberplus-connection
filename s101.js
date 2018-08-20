@@ -157,23 +157,18 @@ S101Codec.prototype.handleEmberFrame = function(frame) {
 
     var payload = frame.readBuffer();
     payload = payload.slice(0, payload.length - 2);
-    if(flags === FLAG_SINGLE_PACKET) {
-        winston.debug('single ember packet');
-        self.handleEmberPacket(SmartBuffer.fromBuffer(payload));
-        self.emberbuf.clear();
-    } else if(flags === FLAG_FIRST_MULTI_PACKET) {
+    if (flags & FLAG_FIRST_MULTI_PACKET) {
         winston.debug('multi ember packet start');
         self.emberbuf.clear();
+    }
+    if ((flags & FLAG_EMPTY_PACKET) === 0) {
         self.emberbuf.writeBuffer(payload);
-    } else if(flags === FLAG_LAST_MULTI_PACKET) {
+    }
+    if (flags & FLAG_LAST_MULTI_PACKET) {
         winston.debug('multi ember packet end');
-        self.emberbuf.writeBuffer(payload);
         self.emberbuf.moveTo(0);
         self.handleEmberPacket(self.emberbuf);
         self.emberbuf.clear();
-    } else {
-        winston.debug('multi ember packet');
-        self.emberbuf.writeBuffer(payload);
     }
 }
 

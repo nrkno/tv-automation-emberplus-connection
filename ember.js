@@ -719,6 +719,7 @@ MatrixNode.decode = function(ber) {
     return m;
 };
 
+
 MatrixNode.prototype.encode = function(ber) {
     ber.startSequence(BER.APPLICATION(13));
 
