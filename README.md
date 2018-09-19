@@ -1,11 +1,9 @@
 # node-emberplus
 
 This is an implementation of [Lawo's
-Ember+](https://github.com/Lawo/ember-plus) control protocol for Node.  One of
-Node's great strengths is the ready availability of frameworks for various
-communication protocols and user interfaces; this module allows those to be
-integrated with Ember+ somewhat more easily than the reference libember C++
-implementation.
+Ember+ control protocol](https://github.com/Lawo/ember-plus) for Node.  One of Node's great strengths is the ready availability of frameworks for various communication protocols and user interfaces; this module allows those to be integrated with Ember+ somewhat more easily than the reference libember C++ implementation.
+
+This library is used in the [**Sofie** TV News Studio Automation System](https://github.com/nrkno/Sofie-TV-automation/).
 
 This version support following ember objects : Node, Parameter, Matrix, QualifiedNode,
 QualifiedParameter, QualifiedMatrix, QualifiedFunction.
