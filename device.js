@@ -164,6 +164,7 @@ DeviceTree.prototype.invokeFunction = function(fnNode, params) {
                 }
                 else {
                     if (DEBUG) {console.log("InvocationResult", result);}
+                    if (result && result.success === false) reject(result);
                     resolve(result); 
                 }
                 self.finishRequest();
