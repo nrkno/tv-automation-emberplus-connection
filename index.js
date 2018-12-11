@@ -3,4 +3,5 @@ const Decoder = require('./device.js').DecodeBuffer;
 const Ember = require("./ember.js");
 const S101 = require("./s101");
 const TreeServer = require("./server");
-module.exports =  {DeviceTree, Decoder, Ember, TreeServer, S101};
+const {S101Client} = require("./client");
+module.exports =  {DeviceTree, Decoder, Ember, TreeServer, S101, S101Client};

@@ -246,10 +246,7 @@ class S101Client extends EventEmitter {
                 if (root !== undefined) {
                     self.emit('emberTree', root);
                 }
-            } catch(e) {
-                self.emit("error", e);
-            }
-        });
+            });
 
         if (socket !== undefined) {
             self.socket.on('data', (data) => {

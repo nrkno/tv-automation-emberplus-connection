@@ -38,7 +38,7 @@ tree.connect()
 
 
 // Simple packet decoder
-const Decoder = require('emberplus').DecodeBuffer;
+const Decoder = require('emberplus').Decoder;
 const fs = require("fs");
 
 fs.readFile("tree.ember", (e,data) => {

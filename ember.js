@@ -10,7 +10,7 @@ const COMMAND_INVOKE        = 33;
 module.exports.Subscribe    = COMMAND_SUBSCRIBE;
 module.exports.Unsubscribe  = COMMAND_UNSUBSCRIBE;
 module.exports.GetDirectory = COMMAND_GETDIRECTORY;
-module.exports.GetDirectory = COMMAND_INVOKE;
+module.exports.Invoke       = COMMAND_INVOKE;
 
 DEBUG = false;
 
@@ -37,31 +37,54 @@ Root.decode = function(ber) {
 
     while(ber.remain > 0) {
         if (DEBUG) { console.log("Reading root"); }
-        ber = ber.getSequence(BER.APPLICATION(0));
         tag = ber.peek();
-        if (DEBUG) { console.log("Application 0 start"); }
+        if (tag === BER.APPLICATION(0)) {
+            ber = ber.getSequence(BER.APPLICATION(0));
+            tag = ber.peek();
+            if (DEBUG) {
+                console.log("Application 0 start");
+            }
 
-        if (tag == BER.APPLICATION(11)) {
-            if (DEBUG) { console.log("Application 11 start"); }
-            var seq = ber.getSequence(BER.APPLICATION(11));
-            r.elements = [];
-            while (seq.remain > 0) {
-                try {
-                    var rootReader = seq.getSequence(BER.CONTEXT(0));
-                    while (rootReader.remain > 0) {
-                        r.addElement(RootElement.decode(rootReader));
+            if (tag == BER.APPLICATION(11)) {
+                if (DEBUG) {
+                    console.log("Application 11 start");
+                }
+                var seq = ber.getSequence(BER.APPLICATION(11));
+                r.elements = [];
+                while (seq.remain > 0) {
+                    try {
+                        var rootReader = seq.getSequence(BER.CONTEXT(0));
+                        while (rootReader.remain > 0) {
+                            r.addElement(RootElement.decode(rootReader));
+                        }
+                    }
+                    catch (e) {
+                        if (DEBUG) {
+                            console.log("Decode ERROR", e.stack);
+                            return r;
+                        }
+                        throw e;
                     }
                 }
-                catch (e) {
-                    console.log(e.stack);
-                    return r;
-                }
+            } else {
+                // StreamCollection BER.APPLICATION(6)
+                // InvocationResult BER.APPLICATION(23)
+                throw new errors.UnimplementedEmberTypeError(tag);
+            }
+        }
+        else if (tag === BER.CONTEXT(0)) {
+            // continuation of previous message
+            try {
+                return RootElement.decode(rootReader)
+            }
+            catch (e) {
+                console.log(e.stack);
+                return r;
             }
         } else if (tag == BER.APPLICATION(23)) { // InvocationResult BER.APPLICATION(23)
            return InvocationResult.decode(ber)
         } else {
-            // StreamCollection BER.APPLICATION(6)
-            throw new errors.UnimplementedEmberTypeError(tag);
+            console.log("unexpected message tag", tag, ber.toString());
         }
     }
     return r;
@@ -169,6 +192,12 @@ TreeNode.prototype.cancelCallbacks = function() {
     }
 }
 
+TreeNode.prototype.getDuplicate = function() {
+    let obj = this.getMinimal();
+    obj.update(this);
+    return obj;
+}
+
 TreeNode.prototype.getMinimal = function() {
     if (this.isQualified()) {
         return new this.constructor(this.path);
@@ -240,13 +269,10 @@ _getElementByPath = function(children, pathArray, path) {
     }
     var currPath = pathArray.join(".");
     var number = pathArray[pathArray.length - 1];
-    //console.log(`looking for path ${currPath} or number ${number}`);
 
     for (var i = 0; i < children.length; i++) {
-        //console.log("looking at child", JSON.stringify(children[i]));
-
         if ((children[i].path == currPath)||
-            (children[i].number == number)){
+            (children[i].number == number)) {
             if (path.length === 0) {
                 return children[i];
             }
@@ -303,7 +329,7 @@ TreeNode.prototype.getElementByIdentifier = function(identifier) {
     var children = this.getChildren();
     if(children === null) return null;
     for(var i=0; i<children.length; i++) {
-        if(children[i].contents !== undefined && 
+        if(children[i].contents !== undefined &&
           children[i].contents.identifier == identifier) {
             return children[i];
         }
@@ -323,21 +349,17 @@ TreeNode.prototype.update = function(other) {
     var self=this;
     var callbacks = [];
 
-    //if(this.getChildren !== null) {
     while(self._directoryCallbacks.length > 0) {
         (function(cb) {
             callbacks.push(() => {
-                //console.log(this.constructor.name, "dir cb", self.getPath());
                 cb(null, self)
             });
         })(self._directoryCallbacks.shift());
     }
-    //}
 
     for(var i=0; i<self._callbacks.length; i++) {
         (function(cb) {
             callbacks.push(() => {
-                //console.log(self.constructor.name, "cb", self.getPath());
                 cb(self)
             });
         })(self._callbacks[i]);
@@ -348,13 +370,13 @@ TreeNode.prototype.update = function(other) {
 
 TreeNode.prototype.getNodeByPath = function(client, path, callback) {
     var self=this;
-   
+
     if(path.length == 0) {
         callback(null, self);
         return;
     }
 
-   
+
     var child = self.getElement(path[0]);
     if(child !== null) {
         child.getNodeByPath(client, path.slice(1), callback);
@@ -393,7 +415,7 @@ TreeNode.prototype.getPath = function() {
         if(path.length > 0) {
             path = path + ".";
         }
-        return path + this.number; 
+        return path + this.number;
     }
 }
 
@@ -501,14 +523,38 @@ QualifiedNode.decode = function(ber) {
     return qn;
 }
 
+function path2number(path) {
+    try {
+        let numbers = path.split(".");
+        if (numbers.length > 0) {
+            return Number(numbers[numbers.length - 1]);
+        }
+    }
+    catch(e) {
+        // ignore
+    }
+}
+
+QualifiedNode.prototype.getMinimal = function(complete = false) {
+    let number = path2number(this.path);
+    let n = new Node(number);
+    if (complete && (this.contents != null)) {
+        n.contents = this.contents;
+    }
+    return n;
+}
+
 QualifiedNode.prototype.update = function(other) {
     callbacks = QualifiedNode.super_.prototype.update.apply(this);
     if((other === undefined) && (other.contents !== undefined)) {
-        //console.log("other: ", other.contents);
-        for(var key in other.contents) {
-            //console.log(key, other.contents.hasOwnProperty(key));
-            if(other.contents.hasOwnProperty(key)) {
-                this.contents[key] = other.contents[key];
+        if (this.contents == null) {
+            this.contents = other.contents;
+        }
+        else {
+            for(var key in other.contents) {
+                if(other.contents.hasOwnProperty(key)) {
+                    this.contents[key] = other.contents[key];
+                }
             }
         }
     }
@@ -618,7 +664,7 @@ Node.decode = function(ber) {
 
 Node.prototype.encode = function(ber) {
     ber.startSequence(BER.APPLICATION(3));
-    
+
     ber.startSequence(BER.CONTEXT(0));
     ber.writeInt(this.number);
     ber.endSequence(); // BER.CONTEXT(0)
@@ -644,14 +690,23 @@ Node.prototype.encode = function(ber) {
     ber.endSequence(); // BER.APPLICATION(3)
 }
 
+Node.prototype.toQualified = function() {
+    let qn = new QualifiedNode(this.getPath());
+    qn.update(this);
+    return qn;
+}
+
 Node.prototype.update = function(other) {
     callbacks = Node.super_.prototype.update.apply(this);
     if ((other !== undefined) && (other.contents !== undefined)) {
-        //console.log("other: ", other.contents);
-        for(var key in other.contents) {
-            //console.log(key, other.contents.hasOwnProperty(key));
-            if(other.contents.hasOwnProperty(key)) {
-                this.contents[key] = other.contents[key];
+        if (this.contents == null) {
+            this.contents = other.contents;
+        }
+        else {
+            for (var key in other.contents) {
+                if (other.contents.hasOwnProperty(key)) {
+                    this.contents[key] = other.contents[key];
+                }
             }
         }
     }
@@ -701,15 +756,7 @@ MatrixNode.decode = function(ber) {
         } else if (tag == BER.CONTEXT(4)) {
             m.sources = decodeSources(seq);
         } else if (tag == BER.CONTEXT(5)) {
-            m.connections = {};
-            seq = seq.getSequence(BER.EMBER_SEQUENCE);
-            while(seq.remain > 0) {
-                var conSeq = seq.getSequence(BER.CONTEXT(0));
-                var con = MatrixConnection.decode(conSeq);
-                if (con.target !== undefined) {
-                    m.connections[con.target] = (con);
-                }
-            }
+            m.connections = decodeConnections(seq);
         }
         else {
             throw new errors.UnimplementedEmberTypeError(tag);
@@ -777,13 +824,14 @@ MatrixNode.prototype.encode = function(ber) {
             ber.endSequence();
             ber.endSequence();
         }
-
         ber.endSequence();
         ber.endSequence();
     }
 
     if (this.connections !== undefined) {
         ber.startSequence(BER.CONTEXT(5));
+        ber.startSequence(BER.EMBER_SEQUENCE);
+
         for(var id in this.connections) {
             if (this.connections.hasOwnProperty(id)) {
                 ber.startSequence(BER.CONTEXT(0));
@@ -791,6 +839,7 @@ MatrixNode.prototype.encode = function(ber) {
                 ber.endSequence();
             }
         }
+        ber.endSequence();
         ber.endSequence();
     }
 
@@ -801,6 +850,12 @@ MatrixNode.prototype.update = function(other) {
     callbacks = MatrixNode.super_.prototype.update.apply(this);
     MatrixUpdate(this, other);
     return callbacks;
+}
+
+MatrixNode.prototype.toQualified = function() {
+    let qm = new QualifiedMatrix(this.getPath());
+    qm.update(this);
+    return qm;
 }
 
 MatrixNode.prototype.connect = function(connections) {
@@ -822,13 +877,10 @@ function MatrixContents() {
 MatrixContents.decode = function(ber) {
     var mc = new MatrixContents();
 
-    //console.log("\n\n Matrix Content\n\n", ber.buffer);
     ber = ber.getSequence(BER.EMBER_SET);
-
 
     while(ber.remain > 0) {
         var tag = ber.peek();
-        //console.log("Next tag", tag, ber.buffer);
         var seq = ber.getSequence(tag);
 
         if(tag == BER.CONTEXT(0)) {
@@ -848,18 +900,22 @@ MatrixContents.decode = function(ber) {
         } else if(tag == BER.CONTEXT(7)) {
             mc.maximumConnectsPerTarget = seq.readInt();
         } else if(tag == BER.CONTEXT(8)) {
-            mc.parametersLocation = seq.readInt();
+            tag = seq.peek();
+            if (tag === BER.EMBER_RELATIVE_OID) {
+                mc.parametersLocation = seq.readRelativeOID(BER.EMBER_RELATIVE_OID); // 13 => relative OID
+            }
+            else {
+                mc.parametersLocation = seq.readInt();
+            }
         } else if(tag == BER.CONTEXT(9)) {
             mc.gainParameterNumber = seq.readInt();
         } else if(tag == BER.CONTEXT(10)) {
             mc.labels = [];
-            //console.log("\n\nLABEL\n\n",seq.buffer);
             seq = seq.getSequence(BER.EMBER_SEQUENCE);
             while(seq.remain > 0) {
                 var lSeq = seq.getSequence(BER.CONTEXT(0));
                 mc.labels.push(Label.decode(lSeq));
             }
-            //console.log(mc);
         } else if(tag == BER.CONTEXT(11)) {
             mc.schemaIdentifiers = seq.readInt();
         } else if(tag == BER.CONTEXT(12)) {
@@ -869,7 +925,6 @@ MatrixContents.decode = function(ber) {
             throw new errors.UnimplementedEmberTypeError(tag);
         }
     }
-    //console.log("end of matrix contents");
     return mc;
 };
 
@@ -917,7 +972,13 @@ MatrixContents.prototype.encode = function(ber) {
     }
     if (this.parametersLocation !== undefined) {
         ber.startSequence(BER.CONTEXT(8));
-        ber.writeInt(this.parametersLocation);
+        let param = Number(this.parametersLocation)
+        if (isNaN(param)) {
+            ber.writeRelativeOID(this.parametersLocation, BER.EMBER_RELATIVE_OID);
+        }
+        else {
+            ber.writeInt(param);
+        }
         ber.endSequence();
     }
     if (this.gainParameterNumber !== undefined) {
@@ -980,6 +1041,19 @@ decodeSources = function(ber) {
     return sources;
 };
 
+decodeConnections = function(ber) {
+    let connections = {};
+
+    let seq = ber.getSequence(BER.EMBER_SEQUENCE);
+    while(seq.remain > 0) {
+        var conSeq = seq.getSequence(BER.CONTEXT(0));
+        var con = MatrixConnection.decode(conSeq);
+        if (con.target !== undefined) {
+            connections[con.target] = (con);
+        }
+    }
+    return connections;
+}
 
 module.exports.MatrixContents = MatrixContents;
 
@@ -1200,6 +1274,26 @@ function QualifiedMatrix(path) {
 
 util.inherits(QualifiedMatrix, TreeNode);
 
+QualifiedMatrix.prototype.getMinimal = function(complete = false) {
+    let number = path2number(this.path);
+    let m = new MatrixNode(number);
+    if (complete) {
+        if (this.contents != null) {
+            m.contents = this.contents;
+        }
+        if (this.targets != null) {
+            m.targets = this.targets;
+        }
+        if (this.sources != null) {
+            m.sources = this.sources;
+        }
+        if (this.connections != null) {
+            m.connections = this.connections;
+        }
+    }
+    return m;
+}
+
 
 QualifiedMatrix.decode = function(ber) {
     var qm = new QualifiedMatrix();
@@ -1245,10 +1339,14 @@ QualifiedMatrix.decode = function(ber) {
 function MatrixUpdate(matrix, newMatrix) {
     if (newMatrix !== undefined) {
         if (newMatrix.contents !== undefined) {
-            for(var key in newMatrix.contents) {
-                //console.log(key, other.contents.hasOwnProperty(key));
-                if (newMatrix.contents.hasOwnProperty(key)) {
-                    matrix.contents[key] = newMatrix.contents[key];
+            if (matrix.contents == null) {
+                matrix.contents = newMatrix.contents;
+            }
+            else {
+                for (var key in newMatrix.contents) {
+                    if (newMatrix.contents.hasOwnProperty(key)) {
+                        matrix.contents[key] = newMatrix.contents[key];
+                    }
                 }
             }
         }
@@ -1267,6 +1365,9 @@ function MatrixUpdate(matrix, newMatrix) {
                     let connection = newMatrix.connections[id];
                     if ((connection.target < matrix.contents.targetCount) &&
                         (connection.target >= 0)) {
+                        if (matrix.connections[connection.target] == null) {
+                            matrix.connections[connection.target] = new MatrixConnection(connection.target);
+                        }
                         matrix.connections[connection.target].setSources(connection.sources);
                     }
                 }
@@ -1353,6 +1454,7 @@ QualifiedMatrix.prototype.encode = function(ber) {
 
     if (this.targets !== undefined) {
         ber.startSequence(BER.CONTEXT(3));
+        ber.startSequence(BER.EMBER_SEQUENCE);
 
         for(var i=0; i<this.targets.length; i++) {
             ber.startSequence(BER.CONTEXT(0));
@@ -1365,10 +1467,12 @@ QualifiedMatrix.prototype.encode = function(ber) {
         }
 
         ber.endSequence();
+        ber.endSequence();
     }
 
     if (this.sources !== undefined) {
         ber.startSequence(BER.CONTEXT(4));
+        ber.startSequence(BER.EMBER_SEQUENCE);
 
         for(var i=0; i<this.sources.length; i++) {
             ber.startSequence(BER.CONTEXT(0));
@@ -1381,11 +1485,13 @@ QualifiedMatrix.prototype.encode = function(ber) {
         }
 
         ber.endSequence();
+        ber.endSequence();
     }
 
     if (this.connections !== undefined) {
         ber.startSequence(BER.CONTEXT(5));
         ber.startSequence(BER.EMBER_SEQUENCE);
+
         for(var id in this.connections) {
             if (this.connections.hasOwnProperty(id)) {
                 ber.startSequence(BER.CONTEXT(0));
@@ -1393,6 +1499,7 @@ QualifiedMatrix.prototype.encode = function(ber) {
                 ber.endSequence();
             }
         }
+
         ber.endSequence();
         ber.endSequence();
     }
@@ -1566,11 +1673,14 @@ QualifiedFunction.decode = function(ber) {
 QualifiedFunction.prototype.update = function(other) {
     callbacks = QualifiedFunction.super_.prototype.update.apply(this);
     if ((other !== undefined) && (other.contents !== undefined)) {
-        //console.log("other: ", other.contents);
-        for(var key in other.contents) {
-            //console.log(key, other.contents.hasOwnProperty(key));
-            if(other.contents.hasOwnProperty(key)) {
-                this.contents[key] = other.contents[key];
+        if (this.contents == null) {
+            this.contents = other.contents;
+        }
+        else {
+            for (var key in other.contents) {
+                if (other.contents.hasOwnProperty(key)) {
+                    this.contents[key] = other.contents[key];
+                }
             }
         }
     }
@@ -1769,31 +1879,31 @@ NodeContents.decode = function(ber) {
 
 NodeContents.prototype.encode = function(ber) {
     ber.startSequence(BER.EMBER_SET);
-    
+
     if(this.identifier !== undefined) {
         ber.startSequence(BER.CONTEXT(0));
         ber.writeString(this.identifier, BER.EMBER_STRING);
         ber.endSequence(); // BER.CONTEXT(0)
     }
-    
+
     if(this.description !== undefined) {
         ber.startSequence(BER.CONTEXT(1));
         ber.writeString(this.description, BER.EMBER_STRING);
         ber.endSequence(); // BER.CONTEXT(1)
     }
-    
+
     if(this.isRoot !== undefined) {
         ber.startSequence(BER.CONTEXT(2));
         ber.writeBoolean(this.isRoot);
         ber.endSequence(); // BER.CONTEXT(2)
     }
-    
+
     if(this.isOnline !== undefined) {
         ber.startSequence(BER.CONTEXT(3));
         ber.writeBoolean(this.isOnline);
         ber.endSequence(); // BER.CONTEXT(3)
     }
-    
+
     if(this.schemaIdentifiers !== undefined) {
         ber.startSequence(BER.CONTEXT(4));
         ber.writeString(this.schemaIdentifiers, BER.EMBER_STRING);
@@ -1855,7 +1965,7 @@ Command.decode = function(ber) {
 
 Command.prototype.encode = function(ber) {
     ber.startSequence(BER.APPLICATION(2));
-    
+
     ber.startSequence(BER.CONTEXT(0));
     ber.writeInt(this.number);
     ber.endSequence(); // BER.CONTEXT(0)
@@ -1985,9 +2095,19 @@ function QualifiedParameter(path) {
 util.inherits(QualifiedParameter, TreeNode);
 module.exports.QualifiedParameter = QualifiedParameter;
 
+QualifiedParameter.prototype.getMinimal = function(complete = false) {
+    let number = path2number(this.path);
+    let p = new Parameter(number);
+    if (complete) {
+        if (this.contents != null) {
+            p = this.contents;
+        }
+    }
+    return p;
+}
+
 
 QualifiedParameter.decode = function(ber) {
-    //console.log("Decoding QualifiedParameter");
     var qp = new QualifiedParameter();
     ber = ber.getSequence(BER.APPLICATION(9));
     while(ber.remain > 0) {
@@ -1995,15 +2115,11 @@ QualifiedParameter.decode = function(ber) {
         var seq = ber.getSequence(tag);
         if(tag == BER.CONTEXT(0)) {
             qp.path = seq.readRelativeOID(BER.EMBER_RELATIVE_OID); // 13 => relative OID
-            //console.log("Decoded path",qp.path);
         }
         else if(tag == BER.CONTEXT(1)) {
-            //console.log("Decoding content");
             qp.contents = ParameterContents.decode(seq);
-            //console.log("Decoded content",qp.contents);
         } else if(tag == BER.CONTEXT(2)) {
             qp.children = [];
-            //console.log("Decoding children");
             seq = seq.getSequence(BER.APPLICATION(4));
             while(seq.remain > 0) {
                 var nodeSeq = seq.getSequence(BER.CONTEXT(0));
@@ -2011,7 +2127,6 @@ QualifiedParameter.decode = function(ber) {
             }
         } else {
             return qp;
-            //throw new errors.UnimplementedEmberTypeError(tag);
         }
     }
     if (DEBUG) { console.log("QualifiedParameter", qp); }
@@ -2049,11 +2164,14 @@ QualifiedParameter.prototype.encode = function(ber) {
 QualifiedParameter.prototype.update = function(other) {
     callbacks = QualifiedParameter.super_.prototype.update.apply(this);
     if ((other !== undefined) && (other.contents !== undefined)) {
-        //console.log("other: ", other.contents);
-        for(var key in other.contents) {
-            //console.log(key, other.contents.hasOwnProperty(key));
-            if(other.contents.hasOwnProperty(key)) {
-                this.contents[key] = other.contents[key];
+        if (this.contents == null) {
+            this.contents = other.contents;
+        }
+        else {
+            for (var key in other.contents) {
+                if (other.contents.hasOwnProperty(key)) {
+                    this.contents[key] = other.contents[key];
+                }
             }
         }
     }
@@ -2175,22 +2293,29 @@ Parameter.prototype.setValue = function(value, callback) {
     if(callback !== undefined) {
         this._directoryCallbacks.push(callback);
     }
-    
+
     return this.getTreeBranch(undefined, (m) => {
         m.contents = (value instanceof ParameterContents) ? value : new ParameterContents(value);
     });
 }
 
+Parameter.prototype.toQualified = function() {
+    let qp = new QualifiedNode(this.getPath());
+    qp.update(this);
+    return qp;
+}
+
 Parameter.prototype.update = function(other) {
     callbacks = Parameter.super_.prototype.update.apply(this);
-    //console.log('update', this.getPath());
-    //console.log(callbacks);
     if ((other !== undefined) && (other.contents !== undefined)) {
-        //console.log("other: ", other.contents);
-        for(var key in other.contents) {
-            //console.log(key, other.contents.hasOwnProperty(key));
-            if(other.contents.hasOwnProperty(key)) {
-                this.contents[key] = other.contents[key];
+        if (this.contents == null) {
+            this.contents = other.contents;
+        }
+        else {
+            for (var key in other.contents) {
+                if (other.contents.hasOwnProperty(key)) {
+                    this.contents[key] = other.contents[key];
+                }
             }
         }
     }
@@ -2286,7 +2411,7 @@ ParameterContents.decode = function(ber) {
 
 ParameterContents.prototype.encode = function(ber) {
     ber.startSequence(BER.EMBER_SET);
-    
+
     ber.writeIfDefined(this.identifier, ber.writeString, 0, BER.EMBER_STRING);
     ber.writeIfDefined(this.description, ber.writeString, 1, BER.EMBER_STRING);
     ber.writeIfDefined(this.value, ber.writeValue, 2);
@@ -2302,15 +2427,15 @@ ParameterContents.prototype.encode = function(ber) {
     ber.writeIfDefined(this.default, ber.writeValue, 12);
     ber.writeIfDefinedEnum(this.type, ParameterType, ber.writeInt, 13);
     ber.writeIfDefined(this.streamIdentifier, ber.writeInt, 14);
-   
+
     if(this.emumMap !== undefined) {
-        ber.startSequence(BER.CONTEXT(15)); 
+        ber.startSequence(BER.CONTEXT(15));
         StringIntegerCollection.encode(ber, this.enumMap);
         ber.endSequence();
     }
 
     if(this.streamDescriptor !== undefined) {
-        ber.startSequence(BER.CONTEXT(16)); 
+        ber.startSequence(BER.CONTEXT(16));
         this.streamDescriptor.encode(ber);
         ber.endSequence();
     }

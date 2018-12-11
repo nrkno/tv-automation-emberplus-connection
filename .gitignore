@@ -1,2 +1,5 @@
+# intellij, pycharm, webstorm...
+/.idea/*
+
 node_modules
 .*.swp
