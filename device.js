@@ -416,6 +416,51 @@ DeviceTree.prototype.unsubscribe = function (node, callback) {
     }
 };
 
+DeviceTree.prototype.setValueWithHacksaw = function (node, value) {
+    var self = this;
+    return new Promise((resolve, reject) => {
+        if ((!(node instanceof ember.Parameter)) &&
+            (!(node instanceof ember.QualifiedParameter))) {
+            reject(new errors.EmberAccessError('not a property'));
+        }
+        else {
+            // if (this._debug) { console.log('setValue', node.getPath(), value); }
+            self.addRequest((error) => {
+                if (error) {
+                    self.finishRequest();
+                    reject(error);
+                    return;
+                }
+
+                let cb = (error, node) => {
+                    // console.log('setValue complete...', node.getPath(), value);
+                    // self.finishRequest();
+                    if (error) {
+                        reject(error);
+                    }
+                    else {
+                        // resolve(node);
+                    }
+                };
+
+                self.callback = cb;
+                if (this._debug) {
+                    console.log('setValue sending ...', node.getPath(), value);
+                }
+                self.client.sendBERNode(node.setValue(value));
+
+                // We now immediately finish & resolve so we can't get any timeouts ever
+                // This is a pretty ugly hack, but as far as I can tell it doesn't bring
+                // any negative consequences regarding the execution and resolving of other
+                // functions. We need this because if the node already has the value we are
+                // setting it too, it will cause a timeout.
+                self.finishRequest();
+                resolve(node);
+            });
+        }
+    });
+};
+
 DeviceTree.prototype.setValue = function (node, value) {
     var self = this;
     return new Promise((resolve, reject) => {
