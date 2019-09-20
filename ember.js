@@ -66,9 +66,10 @@ Root.decode = function(ber) {
                         throw e;
                     }
                 }
-            } else {
+            } else if (tag == BER.APPLICATION(23)) { // InvocationResult BER.APPLICATION(23)
+                return InvocationResult.decode(ber)
+             } else {
                 // StreamCollection BER.APPLICATION(6)
-                // InvocationResult BER.APPLICATION(23)
                 throw new errors.UnimplementedEmberTypeError(tag);
             }
         }
