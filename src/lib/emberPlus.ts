@@ -2,14 +2,15 @@
  *  Draft Ember+ Typescript interface.
  */
 
-interface Tree<T> {
+export interface Tree<T> {
 	value: T
 	parent?: Tree<T>
 	children?: Array<Tree<T>>
+	index: number
 	// TODO: insert all the usual tree manipulation methods
 }
 
-enum ElementType {
+export enum ElementType {
 	Parameter = 'PARAMETER',
 	Node = 'NODE',
 	Command = 'COMMAND',
@@ -18,53 +19,53 @@ enum ElementType {
 	Template = 'TEMPLATE'
 }
 
-interface EmberElement {
+export interface EmberElement {
 	type: ElementType
 	number: number
 }
 
-interface Qualified<T extends EmberElement> {
+export interface Qualified<T extends EmberElement> {
 	value: Tree<T>
 	path: string
 	getRelativeOID(): RelativeOID<T>
 }
 
-type EmberTreeNode = Tree<EmberElement>
-type RootElement = EmberTreeNode | Qualified<Parameter> | Qualified<Node> | Qualified<Matrix> | Qualified<Function> | Qualified<Template>
-type Root = Array<RootElement> | Array<StreamEntry> | InvocationResult
+export type EmberTreeNode = Tree<EmberElement>
+export type RootElement = EmberTreeNode | Qualified<Parameter> | Qualified<Node> | Qualified<Matrix> | Qualified<Function> | Qualified<Template>
+export type Root = Array<RootElement> | Array<StreamEntry> | InvocationResult
 
 // number is either Integer64 or REAL
-type EmberValue = number | string | boolean | Buffer | null
-type MinMax = number | null
-type StringIntegerCollection = Map<string, number>
+export type EmberValue = number | string | boolean | Buffer | null
+export type MinMax = number | null
+export type StringIntegerCollection = Map<string, number>
 
-interface RelativeOID<T extends EmberElement> {
+export interface RelativeOID<T extends EmberElement> {
 	resolve(): Tree<T>
 }
 
-interface Command extends EmberElement {
+export interface Command extends EmberElement {
 	type: ElementType.Command
 }
 
-interface Subscribe extends Command {
+export interface Subscribe extends Command {
 	number: CommandType.Subscribe
 }
 
-interface Unsubscribe extends Command {
+export interface Unsubscribe extends Command {
 	number: CommandType.Unsubscribe
 }
 
-interface GetDirectory extends Command {
+export interface GetDirectory extends Command {
   number: CommandType.GetDirectory
 	dirFieldMask?: FieldFlags
 }
 
-interface Invoke extends Command {
+export interface Invoke extends Command {
 	number: CommandType.Invoke
 	invocation?: Invocation
 }
 
-interface Node extends EmberElement {
+export interface Node extends EmberElement {
 	type: ElementType.Node
 	identifier?: string
 	description?: string
@@ -74,7 +75,7 @@ interface Node extends EmberElement {
 	templateReference: RelativeOID<Template>
 }
 
-interface Matrix extends EmberElement {
+export interface Matrix extends EmberElement {
 	type: ElementType.Matrix
 	targets?: Array<number> // Integer32
 	sources?: Array<number> // Integer32
@@ -95,7 +96,7 @@ interface Matrix extends EmberElement {
 }
 
 // TODO break down further by ParamterType?
-interface Parameter extends EmberElement {
+export interface Parameter extends EmberElement {
 	type: ElementType.Parameter
 	paramterType: ParameterType
 	identifier?: string
@@ -118,7 +119,7 @@ interface Parameter extends EmberElement {
 	templateReference: RelativeOID<Template>
 }
 
-interface Function extends EmberElement {
+export interface Function extends EmberElement {
 	type: ElementType.Function
 	identifier?: string
 	description?: string
@@ -127,13 +128,13 @@ interface Function extends EmberElement {
 	templateReference?: RelativeOID<Template>
 }
 
-interface Template extends EmberElement {
+export interface Template extends EmberElement {
 	type: ElementType.Template
 	element?: Parameter | Node | Matrix | Function
 	description?: string
 }
 
-enum ParameterType {
+export enum ParameterType {
 	Null = 'NULL',
 	Integer = 'INTEGER',
 	Real = 'REAL',
@@ -144,14 +145,14 @@ enum ParameterType {
 	Octets = 'OCTETS'
 }
 
-enum ParameterAccess {
+export enum ParameterAccess {
 	None = 'NONE',
 	Read = 'READ',
 	Write = 'WRITE',
 	ReadWrite = 'READ_WRITE'
 }
 
-enum StreamFormat {
+export enum StreamFormat {
 	UInt8 = 'UInt8',
 	UInt16BE = 'UInt16BE',
 	UInt16LE = 'UInt16LE',
@@ -172,7 +173,7 @@ enum StreamFormat {
 	Float64LE = 'Float64LE'
 }
 
-enum FieldFlags {
+export enum FieldFlags {
 	Sparse = 'SPARSE',
 	All = 'ALL',
 	Default = 'DEFAULT',
@@ -183,69 +184,69 @@ enum FieldFlags {
 	Connections = 'CONNECTIONS'
 }
 
-enum CommandType {
+export enum CommandType {
 	Subscribe = 30,
 	Unsubscribe = 31,
 	GetDirectory = 32,
 	Invoke = 33
 }
 
-enum MatrixType {
+export enum MatrixType {
 	OneToN = 'ONE_TO_N',
 	OneToOne = 'ONE_TO_ONE',
 	NToN = 'N_TO_N'
 }
 
-enum MatrixAddressingMode {
+export enum MatrixAddressingMode {
 	Linear = 'LINEAR',
 	NonLinear = 'NON_LINEAR'
 }
 
-enum ConnectionOperation {
+export enum ConnectionOperation {
 	Absolute = 'ABSOLUTE', // default. sources contains absolute information
 	Connect = 'CONNECT', // nToN only. sources contains sources to add to connection
 	disconnect = 'DISCONNECT' // nToN only. sources contains sources to remove from connection
 }
 
-enum ConnectionDisposition {
+export enum ConnectionDisposition {
 	Tally = 'TALLY',
 	Modified = 'MODIFIED',
 	Pending = 'PENDING',
 	Locked = 'LOCKED'
 }
 
-interface StreamDescription {
+export interface StreamDescription {
 	format: StreamFormat
 	offset: number // Integer32
 }
 
-interface StreamEntry {
+export interface StreamEntry {
 	identifier: number // Integer32
 	value: EmberValue // not null
 }
 
-interface FunctionArgument {
+export interface FunctionArgument {
 	type: ParameterType
 	name: string
 }
 
-interface Invocation {
+export interface Invocation {
 	id?: number // BER readInt
 	args: Array<EmberValue>
 }
 
-interface InvocationResult {
+export interface InvocationResult {
 	id: number
 	success?: boolean
 	result?: Array<EmberValue>
 }
 
-interface Label {
+export interface Label {
 	basePath: string // might be RelativeOID<?>
 	description: string
 }
 
-interface Connection {
+export interface Connection {
 	target: number // Integer32
 	sources?: Array<number> // Integer32s
 	operation?: ConnectionOperation
