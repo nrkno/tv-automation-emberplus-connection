@@ -1,4 +1,28 @@
-import { EmberTreeNode, EmberValue, Function, Invocation, InvocationResult, ParameterType, Parameter, Matrix, ConnectionOperation, RootElement, Qualified, EmberElement, Command, GetDirectory, CommandType, FieldFlags, ElementType, Subscribe, Tree, Unsubscribe, Invoke } from './lib/emberPlus'
+import {
+  EmberTreeNode,
+  EmberValue,
+  Function,
+  Invocation,
+  InvocationResult,
+  Matrix,
+  RootElement,
+  Qualified,
+  EmberElement,
+  Command,
+  GetDirectory,
+  CommandType,
+  FieldFlags,
+  ElementType,
+  Subscribe,
+  Unsubscribe,
+  Invoke,
+  Parameter,
+  Tree,
+  ParameterType,
+  Connection,
+  ConnectionOperation,
+  Root
+} from './lib/emberPlus'
 import { ResponseResolver } from './resolvers';
 import { EventEmitter } from 'events'
 
@@ -39,15 +63,15 @@ export interface IEmberClient {
   getDirectory: (node: RootElement) => RequestPromise<RootElement>
   subscribe: (node: EmberTreeNode, cb?: (node: EmberTreeNode) => void) => RequestPromise<void>
   unsubscribe: (node: EmberTreeNode) => RequestPromise<void>
+  invokeFunction: (func: Function, args: Invocation['args']) => RequestPromise<InvocationResult>
 
   /**
    * Send parts of tree to provider for setting stuff:
    */
-  setValue: (node: EmberTreeNode, value: EmberValue) => RequestPromise<EmberTreeNode>
-  invokeFunction: (func: Function, args: Invocation['args']) => RequestPromise<InvocationResult>
-  matrixConnect: (matrix: Matrix, targetId: number, sources: Array<number>) => Promise<Matrix>
-  matrixDisconnect: (matrix: Matrix, targetId: number, sources: Array<number>) => Promise<Matrix>
-  matrixSetConnection: (matrix: Matrix, targetId: number, sources: Array<number>) => Promise<Matrix>
+  setValue: (node: Tree<Parameter>, value: EmberValue) => RequestPromise<Tree<Parameter>>
+  matrixConnect: (matrix: Tree<Matrix>, targetId: number, sources: Array<number>) => RequestPromise<Tree<Matrix>>
+  matrixDisconnect: (matrix: Tree<Matrix>, targetId: number, sources: Array<number>) => RequestPromise<Tree<Matrix>>
+  matrixSetConnection: (matrix: Tree<Matrix>, targetId: number, sources: Array<number>) => RequestPromise<Tree<Matrix>>
 
   /**
    * Helpful functions for the tree:
@@ -70,6 +94,7 @@ export class EmberClient extends EventEmitter implements IEmberClient {
 
   private _requests = new Map<string, IRequest>()
   private _lastInvocation = 0
+  private _tree: Root // TODO - why not public?
 
   constructor (host?, port = 9000) {
     super()
@@ -101,7 +126,7 @@ export class EmberClient extends EventEmitter implements IEmberClient {
   }
 
   /** Ember+ commands: */
-  getDirectory (node: RootElement, dirFieldMask?: FieldFlags) {
+  getDirectory (node: RootElement, dirFieldMask?: FieldFlags,  cb?: (node: EmberTreeNode) => void) {
     const command: GetDirectory = {
       type: ElementType.Command,
       number: CommandType.GetDirectory,
@@ -116,7 +141,7 @@ export class EmberClient extends EventEmitter implements IEmberClient {
     }
     return this._sendCommand<void>(node, command, false)
   }
-  unsubscribe (node: EmberTreeNode, cb?: (node: EmberTreeNode) => void) {
+  unsubscribe (node: EmberTreeNode) {
     const command: Unsubscribe = {
       type: ElementType.Command,
       number: CommandType.Unsubscribe
@@ -124,6 +149,7 @@ export class EmberClient extends EventEmitter implements IEmberClient {
     return this._sendCommand<void>(node, command, false)
   }
   invoke (node: EmberTreeNode, ...args: Array<EmberValue>) {
+    // TODO - validate arguments
     const command: Invoke = {
       type: ElementType.Command,
       number: CommandType.Invoke,
@@ -133,6 +159,92 @@ export class EmberClient extends EventEmitter implements IEmberClient {
       }
     }
     return this._sendCommand<InvocationResult>(node, command, false)
+  }
+
+  /** Sending ember+ values */
+  setValue (node: Tree<Parameter>, value: EmberValue): RequestPromise<Tree<Parameter>> {
+    const qualifiedParam = assertQualifiedNode(node) as Qualified<Parameter>
+
+    // TODO - validate value
+    // TODO - should other properties be scrapped?
+    qualifiedParam.value.value.value = value
+
+    return this._sendRequest<Tree<Parameter>>(qualifiedParam)
+  }
+  matrixConnect (matrix: Tree<Matrix>, target: number, sources: Array<number>): RequestPromise<Tree<Matrix>> {
+    return this._matrixMutation(matrix, target, sources, ConnectionOperation.Connect)
+  }
+  matrixDisconnect (matrix: Tree<Matrix>, target: number, sources: Array<number>): RequestPromise<Tree<Matrix>> {
+    return this._matrixMutation(matrix, target, sources, ConnectionOperation.Disconnect)
+  }
+  matrixSetConnection (matrix: Tree<Matrix>, target: number, sources: Array<number>): RequestPromise<Tree<Matrix>> {
+    return this._matrixMutation(matrix, target, sources, ConnectionOperation.Absolute)
+  }
+
+  /** Getting the tree: */
+  // TODO - these functions don't necessarilly send a request, should they really
+  // return a RequestPromise?
+  expand (node: EmberTreeNode): RequestPromise<EmberTreeNode> {
+    const nodes = [ node ]
+    const p: Array<Promise<any>> = []
+
+    let curNode
+    while (curNode = nodes.shift()) {
+      if (curNode.children) {
+        nodes.push(...curNode.children)
+      } else {
+        p.push(this.getDirectory(curNode).then(async req => {
+          if (req.response) {
+            const res = await req.response as Tree<EmberElement>
+            return res.children?.map(c => this.expand(c))
+          }
+        }))
+      }
+    }
+
+    return Promise.all(p).then(() => ({
+      sentOk: true,
+      response: Promise.resolve(node)
+    }), () => ({
+      sentOk: false
+    }))
+  }
+  async getElementByPath (path: string, cb?: (node: EmberTreeNode) => void): RequestPromise<EmberTreeNode> {
+    const pathArr = path.split('.') // TODO - should we remain backward compatible and accept "/"?
+    let tree: EmberTreeNode = this._tree[pathArr.shift()]
+
+    for (let i = pathArr.shift(); pathArr.length; i = pathArr.shift()) {
+      if (tree.children && tree.children[i]) {
+        tree = tree.children[i]
+      } else {
+        const req = await this.getDirectory(tree)
+        tree = await req.response as EmberTreeNode
+        if (tree.children && tree.children[i]) {
+          tree = tree.children[i]
+        } else {
+          throw new Error('Child not found')
+        }
+      }
+    }
+
+    return {
+      sentOk: true,
+      response: Promise.resolve(tree)
+    }
+  }
+
+  private _matrixMutation (matrix: Tree<Matrix>, target: number, sources: Array<number>, operation: ConnectionOperation) {
+    const qualifiedMatrix = assertQualifiedNode(matrix) as Qualified<Matrix>
+
+    const connection: Connection = {
+      operation,
+      target,
+      sources
+    }
+
+    qualifiedMatrix.value.value.connections = [ connection ]
+
+    return this._sendRequest<Tree<Matrix>>(qualifiedMatrix)
   }
 
   private _sendCommand<T> (node: EmberTreeNode | RootElement, command: Command, hasResponse?: boolean) {

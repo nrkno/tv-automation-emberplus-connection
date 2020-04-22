@@ -205,7 +205,7 @@ export enum MatrixAddressingMode {
 export enum ConnectionOperation {
 	Absolute = 'ABSOLUTE', // default. sources contains absolute information
 	Connect = 'CONNECT', // nToN only. sources contains sources to add to connection
-	disconnect = 'DISCONNECT' // nToN only. sources contains sources to remove from connection
+	Disconnect = 'DISCONNECT' // nToN only. sources contains sources to remove from connection
 }
 
 export enum ConnectionDisposition {
