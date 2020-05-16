@@ -4,7 +4,8 @@ import { Writer, WriterOptions } from 'asn1'
 import { CONTEXT, UNIVERSAL } from './functions'
 import { BERDataTypes } from './BERDataTypes'
 import { Parameter, ParameterType, isParameter } from '../model/Parameter'
-import { EmberValue, EmberTypedValue } from '../types/types'
+import { EmberValue } from '../model/EmberValue'
+import { EmberTypedValue } from '../model/EmberTypedValue'
 
 export { ExtendedWriter as Writer }
 
@@ -65,8 +66,13 @@ class ExtendedWriter extends Writer {
 
 		exponent = exponent.toNumber()
 
-		let { size: expSize, value: shortExp } = shorten(exponent)
-		let { size: sigSize, value: shortSig } = shortenLong(significand)
+		const shortenedExponent = shorten(exponent)
+		const expSize = shortenedExponent.size
+		let shortExp = shortenedExponent.value
+
+		const shortenedSignificand = shortenLong(significand)
+		const sigSize = shortenedSignificand.size
+		let shortSig = shortenedSignificand.value
 
 		this.writeLength(1 + expSize + sigSize)
 
@@ -158,9 +164,9 @@ class ExtendedWriter extends Writer {
 					this.writeBoolean(value.value as boolean, BERDataTypes.BOOLEAN)
 					break
 				case ParameterType.Octets:
-					if (!Buffer.isBuffer(value.value)) { 
+					if (!Buffer.isBuffer(value.value)) {
 						value.value = Buffer.from(`${value.value}`)
-					} 
+					}
 					if (value.value.length) {
 						this.writeByte(BERDataTypes.OCTETSTRING)
 						this.writeLength(0)

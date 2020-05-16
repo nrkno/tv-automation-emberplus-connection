@@ -1,6 +1,7 @@
 import * as Ber from '../../../Ber'
 import { Invocation, InvocationImpl } from '../../../model/Invocation'
-import { EmberTypedValue } from '../../../types/types'
+import { EmberTypedValue } from '../../../model/EmberTypedValue'
+
 import { InvocationBERID } from '../constants'
 
 export { decodeInvocation }

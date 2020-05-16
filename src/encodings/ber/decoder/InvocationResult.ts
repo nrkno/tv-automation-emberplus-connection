@@ -1,6 +1,6 @@
 import * as Ber from '../../../Ber'
 import { InvocationResult, InvocationResultImpl } from '../../../model/InvocationResult'
-import { EmberTypedValue } from '../../../types/types'
+import { EmberTypedValue } from '../../../model/EmberTypedValue'
 import { InvocationResultBERID } from '../constants'
 
 export function decodeInvocationResult(reader: Ber.Reader): InvocationResult {

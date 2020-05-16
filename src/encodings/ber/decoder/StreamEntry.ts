@@ -1,6 +1,7 @@
 import * as Ber from '../../../Ber'
 import { StreamEntry, StreamEntryImpl } from '../../../model/StreamEntry'
-import { EmberTypedValue } from '../../../types/types'
+import { EmberTypedValue } from '../../../model/EmberTypedValue'
+
 import { StreamEntryBERID, StreamEntriesBERID } from '../constants'
 
 export { decodeStreamEntry, decodeStreamEntries }

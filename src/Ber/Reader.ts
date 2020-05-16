@@ -3,7 +3,7 @@ import Long from 'long'
 import { ASN1Error, UnimplementedEmberTypeError } from '../Errors'
 import { BERDataTypes } from './BERDataTypes'
 import { UNIVERSAL } from './functions'
-import { EmberTypedValue } from '../types/types'
+import { EmberTypedValue } from '../model/EmberTypedValue'
 import { ParameterType } from '../model/Parameter'
 
 export { ExtendedReader as Reader }
@@ -40,7 +40,7 @@ class ExtendedReader extends Reader {
 			case BERDataTypes.NULL: // Note: No readNull in BER library but writer writes 2 bytes
 				this.readByte(false) // Read past - ASN1.NULL tag 0x05
 				this.readByte(false) // and - 0x00 length
-				return { type: ParameterType.Null, value: null } 
+				return { type: ParameterType.Null, value: null }
 			default:
 				throw new UnimplementedEmberTypeError(tag)
 		}
