@@ -1,6 +1,20 @@
 node_modules
-dist
-scratch
-build
+/dist
+/scratch
+/build
 package-lock.json
-lib
+/lib
+/coverage
+
+# old src folders/files
+/Ber
+/EmberClient
+/EmberLib
+/EmberServer
+/EmberSocket
+/Ember
+/test
+/Errors.js
+/s101.js
+/sample.js
+/serve.js
