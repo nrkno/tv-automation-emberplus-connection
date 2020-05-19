@@ -50,7 +50,7 @@ function isInvocationResult(obj: any): obj is InvocationResult {
 			return false
 		}
 
-		if (result.length !== result.filter(isEmberTypedValue).length) {
+		if (result.some((value) => !isEmberTypedValue(value))) {
 			return false
 		}
 	}

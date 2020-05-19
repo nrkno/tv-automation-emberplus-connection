@@ -1,24 +1,33 @@
 import { Root, RootType } from '../../types/types'
-import { InvocationResultImpl } from '../../model/InvocationResult'
+import { InvocationResult } from '../../model/InvocationResult'
+
+import {
+	decode as decodeInvocationResult,
+	encode as encodeInvocationResult
+} from './InvocationResultCodec'
 
 export { decode, encode }
 
 function decode(obj: any): Root {
-	const { _type } = obj
+	const { _rootType } = obj
 
-	switch (_type) {
+	switch (_rootType) {
 		case RootType.Elements:
 			return []
 		case RootType.Streams:
 			return []
 		case RootType.InvocationResult:
-			return new InvocationResultImpl(obj.id)
+			return decodeInvocationResult(obj)
 		default:
-			throw new Error(`Unknown or missing root type: ${_type}`)
+			throw new Error(`Unknown or missing root type: ${_rootType}`)
 	}
 }
 
 function encode(el: Root, rootType: RootType): any {
-	el
-	return { _type: rootType }
+	switch (rootType) {
+		case RootType.InvocationResult:
+			return Object.assign(encodeInvocationResult(el as InvocationResult), { _rootType: rootType })
+		default:
+			return { _rootType: rootType }
+	}
 }

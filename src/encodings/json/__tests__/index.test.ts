@@ -7,19 +7,19 @@ import { EmberNodeImpl } from '../../../model/EmberNode'
 
 describe('encoders/JSON', () => {
 	describe('encode', () => {
-		test('should set root _type property to RootType value', () => {
+		test('should set _rootType property to RootType value', () => {
 			const root = new InvocationResultImpl(42)
 
 			const actual = encode(root, RootType.InvocationResult)
 
-			expect(actual._type).toEqual(RootType.InvocationResult)
+			expect(actual._rootType).toEqual(RootType.InvocationResult)
 		})
 	})
 
 	describe('decode', () => {
-		test('should return array when _type equals RootType.Elements', () => {
+		test('should return array when _rootType equals RootType.Elements', () => {
 			const input = {
-				_type: RootType.Elements
+				_rootType: RootType.Elements
 			}
 
 			const actual = decode(input)
@@ -29,7 +29,7 @@ describe('encoders/JSON', () => {
 
 		test('should return array when _type equals RootType.Streams', () => {
 			const input = {
-				_type: RootType.Streams
+				_rootType: RootType.Streams
 			}
 
 			const actual = decode(input)
@@ -39,7 +39,7 @@ describe('encoders/JSON', () => {
 
 		test('should return InvocationResult when _type equals RootType.InvocationResult', () => {
 			const input = {
-				_type: RootType.InvocationResult,
+				_rootType: RootType.InvocationResult,
 				id: 47
 			}
 
@@ -49,12 +49,16 @@ describe('encoders/JSON', () => {
 		})
 	})
 
-	describe.skip('Roundtrip tests', () => {
+	describe('Roundtrip tests', () => {
 		function roundTrip(res: Root, type: RootType): void {
-			const encoded = encode(res, type)
-			const decoded = decode(encoded)
-
-			expect(decoded).toEqual(res)
+			try {
+				// going the stringify/parse route ensures actual JSON compatibility
+				const encodedString = JSON.stringify(encode(res, type))
+				const decoded = decode(JSON.parse(encodedString))
+				expect(decoded).toEqual(res)
+			} catch (err) {
+				fail(err)
+			}
 		}
 
 		test('InvocationResult', () => {
@@ -63,17 +67,17 @@ describe('encoders/JSON', () => {
 			roundTrip(res, RootType.InvocationResult)
 		})
 
-		test('Qualified node', () => {
+		test.skip('Qualified node', () => {
 			const res = [new QualifiedElementImpl('2.3.1', new EmberNodeImpl('Test node'))]
 			roundTrip(res, RootType.Elements)
 		})
 
-		test('Numbered node', () => {
+		test.skip('Numbered node', () => {
 			const res = [new NumberedTreeNodeImpl(0, new EmberNodeImpl('Test node'))]
 			roundTrip(res, RootType.Elements)
 		})
 
-		test('Numbered tree', () => {
+		test.skip('Numbered tree', () => {
 			const res = [
 				new NumberedTreeNodeImpl(0, new EmberNodeImpl('Test node'), [
 					new NumberedTreeNodeImpl(0, new EmberNodeImpl('Test node 1'))
@@ -86,7 +90,7 @@ describe('encoders/JSON', () => {
 			roundTrip(res, RootType.Elements)
 		})
 
-		test('Qualified tree', () => {
+		test.skip('Qualified tree', () => {
 			const res = [
 				new QualifiedElementImpl('2.3.1', new EmberNodeImpl('Test node'), [
 					new NumberedTreeNodeImpl(0, new EmberNodeImpl('Node A'), [])

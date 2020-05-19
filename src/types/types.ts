@@ -15,9 +15,9 @@ export {
 	EmberTreeNode,
 	Root,
 	RootElement,
+	RootType,
 	MinMax,
 	StringIntegerCollection,
-	RootType,
 	RelativeOID
 }
 
