@@ -51,14 +51,10 @@ describe('encoders/JSON', () => {
 
 	describe('Roundtrip tests', () => {
 		function roundTrip(res: Root, type: RootType): void {
-			try {
-				// going the stringify/parse route ensures actual JSON compatibility
-				const encodedString = JSON.stringify(encode(res, type))
-				const decoded = decode(JSON.parse(encodedString))
-				expect(decoded).toEqual(res)
-			} catch (err) {
-				fail(err)
-			}
+			// going the stringify/parse route ensures actual JSON compatibility
+			const encodedString = JSON.stringify(encode(res, type))
+			const decoded = decode(JSON.parse(encodedString))
+			expect(decoded).toEqual(res)
 		}
 
 		test('InvocationResult', () => {

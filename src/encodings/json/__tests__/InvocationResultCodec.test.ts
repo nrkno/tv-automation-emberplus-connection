@@ -1,6 +1,11 @@
 import { InvocationResultImpl } from '../../../model/InvocationResult'
 import { encode, decode } from '../InvocationResultCodec'
 import { ParameterType } from '../../../model/Parameter'
+import { EmberTypedValue } from '../../../model/EmberTypedValue'
+import {
+	decode as decodeEmberTypedValue,
+	encode as encodeEmberTypedValue
+} from '../EmberTypedValueCodec'
 
 describe('encodings/json/InvocationResultCodec', () => {
 	describe('decode', () => {
@@ -32,6 +37,16 @@ describe('encodings/json/InvocationResultCodec', () => {
 			const actual = decode({ id: 1 })
 
 			expect(actual.success).toBeUndefined()
+		})
+
+		test('should decode result values', () => {
+			const result1 = encodeEmberTypedValue({ type: ParameterType.Boolean, value: false })
+			const result2 = encodeEmberTypedValue({ type: ParameterType.String, value: 'Heisann' })
+			const expected = [result1, result2].map(decodeEmberTypedValue)
+
+			const actual = decode({ id: 1, success: true, result: [result1, result2] })
+
+			expect(actual.result).toEqual(expected)
 		})
 	})
 
@@ -89,7 +104,13 @@ describe('encodings/json/InvocationResultCodec', () => {
 		})
 
 		test('should encode result values', () => {
-			fail('not implemented yet')
+			const result1: EmberTypedValue = { type: ParameterType.Boolean, value: false }
+			const result2: EmberTypedValue = { type: ParameterType.String, value: 'Heisann' }
+			const expected = [result1, result2].map(encodeEmberTypedValue)
+
+			const actual = encode(new InvocationResultImpl(1, true, [result1, result2]))
+
+			expect(actual.result).toEqual(expected)
 		})
 	})
 })
