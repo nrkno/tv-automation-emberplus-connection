@@ -63,7 +63,7 @@ describe('encoders/JSON', () => {
 			roundTrip(res, RootType.InvocationResult)
 		})
 
-		test.skip('Qualified node', () => {
+		test('Qualified node', () => {
 			const res = [new QualifiedElementImpl('2.3.1', new EmberNodeImpl('Test node'))]
 			roundTrip(res, RootType.Elements)
 		})

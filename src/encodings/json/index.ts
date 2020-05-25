@@ -12,6 +12,14 @@ function decode(obj: any): Root {
 	const { _rootType } = obj
 
 	switch (_rootType) {
+		// type RootElement =
+		// | NumberedTreeNode<EmberElement>
+		// | QualifiedElement<Parameter>
+		// | QualifiedElement<EmberNode>
+		// | QualifiedElement<Matrix>
+		// | QualifiedElement<EmberFunction>
+		// | QualifiedElement<Template>
+
 		case RootType.Elements:
 			return []
 		case RootType.Streams:
