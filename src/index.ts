@@ -7,6 +7,20 @@ import { S101Client } from './Ember/Socket/index'
 import { berEncode, berDecode } from './encodings/ber/index'
 // import { EmberElement } from './model/EmberElement'
 
+// import {
+// 	EmberTreeNode,
+// 	EmberValue,
+// 	EmberTypedValue,
+// 	Root,
+// 	RootElement,
+// 	MinMax,
+// 	StringIntegerCollection,
+// 	RootType,
+// 	RelativeOID,
+// }
+import * as Types from './types'
+import * as Model from './model'
+
 const Decoder = EmberLib.DecodeBuffer
 
 // TODO
@@ -33,8 +47,11 @@ export {
 	S101Codec,
 	S101Client,
 	berEncode,
-	berDecode
+	berDecode,
 	// isValid,
 	// toJSON,
-	// fromJSON
+	// fromJSON,
+
+	Types,
+	Model
 }

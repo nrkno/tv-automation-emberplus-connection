@@ -40,17 +40,17 @@ export function encodeParameter(parameter: Parameter, writer: Ber.Writer): void 
 
 	writer.writeIfDefined(parameter.identifier, writer.writeString, 0, Ber.BERDataTypes.STRING)
 	writer.writeIfDefined(parameter.description, writer.writeString, 1, Ber.BERDataTypes.STRING)
-	if (parameter.value) {
+	if (parameter.value !== undefined) {
 		writer.startSequence(Ber.CONTEXT(2))
 		writeValue(parameter.value)
 		writer.endSequence()
 	}
-	if (parameter.minimum) {
+	if (parameter.minimum !== undefined) {
 		writer.startSequence(Ber.CONTEXT(3))
 		writeValue(parameter.minimum)
 		writer.endSequence()
 	}
-	if (parameter.maximum) {
+	if (parameter.maximum !== undefined) {
 		writer.startSequence(Ber.CONTEXT(4))
 		writeValue(parameter.maximum)
 		writer.endSequence()

@@ -66,28 +66,23 @@ class ExtendedWriter extends Writer {
 
 		exponent = exponent.toNumber()
 
-		const shortenedExponent = shorten(exponent)
-		const expSize = shortenedExponent.size
-		let shortExp = shortenedExponent.value
+		const shortExp = shorten(exponent)
+		const shortSig = shortenLong(significand)
 
-		const shortenedSignificand = shortenLong(significand)
-		const sigSize = shortenedSignificand.size
-		let shortSig = shortenedSignificand.value
-
-		this.writeLength(1 + expSize + sigSize)
+		this.writeLength(1 + shortExp.size + shortSig.size)
 
 		const preamble = value < 0 ? 0x80 | 0x40 : 0x80 // in what case will 0x80|0x40 be anything but 0xC0?
 		this.writeByte(preamble)
 
-		for (let i = 0; i < expSize; i++) {
-			this.writeByte((shortExp & 0xff000000) >> 24)
-			shortExp <<= 8
+		for (let i = 0; i < shortExp.size; i++) {
+			this.writeByte((shortExp.value & 0xff000000) >> 24)
+			shortExp.value <<= 8
 		}
 
 		const mask = Long.fromBits(0x00000000, 0xff000000, true)
-		for (let i = 0; i < sigSize; i++) {
-			this.writeByte(shortSig.and(mask).shru(56).toNumber())
-			shortSig = shortSig.shl(8)
+		for (let i = 0; i < shortSig.size; i++) {
+			this.writeByte(shortSig.value.and(mask).shru(56).toNumber())
+			shortSig.value = shortSig.value.shl(8)
 		}
 	}
 

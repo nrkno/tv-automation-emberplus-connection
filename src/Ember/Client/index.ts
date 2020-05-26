@@ -170,13 +170,13 @@ export class EmberClient extends EventEmitter {
 
 	/** Ember+ commands: */
 	getDirectory(
-		node: RootElement | Array<RootElement>,
+		node: RootElement | Collection<RootElement>,
 		dirFieldMask?: FieldFlags,
 		cb?: (EmberNode: TreeElement<EmberElement>) => void
 	) {
 		const command: GetDirectory = new GetDirectoryImpl(dirFieldMask)
 
-		if (Array.isArray(node)) {
+		if (!('number' in node || 'path' in node)) {
 			if (cb)
 				this._subscriptions.push({
 					path: undefined,
@@ -287,8 +287,8 @@ export class EmberClient extends EventEmitter {
 	}
 
 	/** Getting the tree: */
-	async expand(node: NumberedTreeNode<EmberElement> | Array<RootElement>) {
-		if (Array.isArray(node)) {
+	async expand(node: NumberedTreeNode<EmberElement> | Collection<RootElement>) {
+		if (!('number' in node)) {
 			await (await this.getDirectory(node)).response
 			for (const root of Object.values(this.tree)) await this.expand(root)
 			return
@@ -321,7 +321,6 @@ export class EmberClient extends EventEmitter {
 		}
 	}
 	async getElementByPath(path: string, cb?: (EmberNode: TreeElement<EmberElement>) => void) {
-		console.log('get ' + path)
 		const getNext = (elements: Collection<NumberedTreeNode<EmberElement>>, i?: string) =>
 			Object.values(elements || {}).find(
 				(r) =>
@@ -353,7 +352,6 @@ export class EmberClient extends EventEmitter {
 		}
 
 		if (cb && numberedPath) {
-			console.log(numberedPath)
 			this._subscriptions.push({
 				path: numberedPath.join('.'),
 				cb

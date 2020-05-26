@@ -2,41 +2,53 @@ import { ElementType, isEmberElement } from '../EmberElement'
 
 describe('model/EmberElement', () => {
 	describe('isEmberElement()', () => {
-		test('should fail for null input', () => {
-			const actual = isEmberElement(null)
+		describe('non-object inputs', () => {
+			test('should fail for null input', () => {
+				const actual = isEmberElement(null)
 
-			expect(actual).toBe(false)
+				expect(actual).toBe(false)
+			})
+
+			test('should fail for no input', () => {
+				// typescript blocks a call with no args, but explicit undefined is just as good
+				const actual = isEmberElement(undefined)
+
+				expect(actual).toBe(false)
+			})
+
+			test('should fail for string input', () => {
+				const actual = isEmberElement('not good enough')
+
+				expect(actual).toBe(false)
+			})
 		})
 
-		test('should fail for no input', () => {
-			// typescript blocks a call with no args, but explicit undefined is just as good
-			const actual = isEmberElement(undefined)
+		describe('Parameter type', () => {
+			test('should be true when number property has a number value', () => {
+				const actual = isEmberElement({ type: ElementType.Parameter })
 
-			expect(actual).toBe(false)
+				expect(actual).toBe(true)
+			})
+
+			test('should be true when input has no number property', () => {
+				const actual = isEmberElement({ type: ElementType.Parameter })
+
+				expect(actual).toBe(true)
+			})
 		})
 
-		test('should fail for string input', () => {
-			const actual = isEmberElement('not good enough')
+		describe('Node type', () => {
+			test('should be true when number property has a number value', () => {
+				const actual = isEmberElement({ type: ElementType.Node, number: 0 })
 
-			expect(actual).toBe(false)
-		})
+				expect(actual).toBe(true)
+			})
 
-		test('should fail with invalid type property', () => {
-			const actual = isEmberElement({ type: -47 })
+			test('should be true when input has no number property', () => {
+				const actual = isEmberElement({ type: ElementType.Parameter })
 
-			expect(actual).toBe(false)
-		})
-
-		test('should pass for Parameter type', () => {
-			const actual = isEmberElement({ type: ElementType.Parameter })
-
-			expect(actual).toBe(true)
-		})
-
-		test('should pass for Node type', () => {
-			const actual = isEmberElement({ type: ElementType.Node })
-
-			expect(actual).toBe(true)
+				expect(actual).toBe(true)
+			})
 		})
 
 		test('should pass for Command type', () => {
@@ -61,6 +73,32 @@ describe('model/EmberElement', () => {
 			const actual = isEmberElement({ type: ElementType.Template })
 
 			expect(actual).toBe(true)
+		})
+
+		describe('Missing/invalid parameter type property', () => {
+			test('should fail with invalid type property', () => {
+				const actual = isEmberElement({ type: -47, number: 42 })
+
+				expect(actual).toBe(false)
+			})
+
+			test('should fail with valid number value', () => {
+				const actual = isEmberElement({ number: 0 })
+
+				expect(actual).toBe(false)
+			})
+
+			test('should fail with missing number value', () => {
+				const actual = isEmberElement({ thisIs: 'irrelevant' })
+
+				expect(actual).toBe(false)
+			})
+
+			test('should fail with invalid number value', () => {
+				const actual = isEmberElement({ number: 'whatever' })
+
+				expect(actual).toBe(false)
+			})
 		})
 	})
 })
