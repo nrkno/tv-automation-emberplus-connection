@@ -3,32 +3,43 @@ import { FunctionArgument, FunctionArgumentImpl } from '../../../model/FunctionA
 import { ParameterType } from '../../../model/Parameter'
 import { FunctionArgumentBERID } from '../constants'
 import { readParameterType } from './Parameter'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	makeResult,
+	unknownContext,
+	check,
+	appendErrors,
+	skipNext
+} from './DecodeResult'
 
 export { decodeFunctionArgument }
 
-function decodeFunctionArgument(reader: Ber.Reader): FunctionArgument {
-	const ber = reader.getSequence(FunctionArgumentBERID)
+function decodeFunctionArgument(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<FunctionArgument> {
+	reader.readSequence(FunctionArgumentBERID)
 	let type: ParameterType | null = null
 	let name: string | undefined = undefined
-	while (ber.remain > 0) {
-		const tag = ber.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const seq = ber.getSequence(tag)
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				type = readParameterType(seq.readInt())
+				type = appendErrors(readParameterType(reader.readInt(), options), errors)
 				break
 			case Ber.CONTEXT(1):
-				name = seq.readString(Ber.BERDataTypes.STRING)
+				name = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'decode function context', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
-	if (type === null) {
-		throw new Error(``)
-	}
-	return new FunctionArgumentImpl(type, name)
+	type = check(type, 'decode function argument', 'type', ParameterType.Null, errors, options)
+	return makeResult(new FunctionArgumentImpl(type, name), errors)
 }

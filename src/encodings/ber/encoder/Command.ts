@@ -4,7 +4,7 @@ import { encodeInvocation } from './Invocation'
 import { CommandBERID } from '../constants'
 
 export function encodeCommand(el: Command, writer: Ber.Writer): void {
-	writer.startSequence(CommandBERID) // TODO - make non magic number?
+	writer.startSequence(CommandBERID)
 
 	writer.startSequence(Ber.CONTEXT(0))
 	writer.writeInt(el.number)

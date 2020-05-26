@@ -3,9 +3,11 @@ import { EmberNode } from '../../../model/EmberNode'
 import { encodeNode } from '../encoder/EmberNode'
 import { decodeNode } from '../decoder/EmberNode'
 import { ElementType } from '../../../model/EmberElement'
+import { literal } from '../../../types/types'
+import { guarded } from '../decoder/DecodeResult'
 
 describe('encodings/ber/EmberNode', () => {
-	const en = {
+	const en = literal<EmberNode>({
 		type: ElementType.Node,
 		identifier: 'Nodey',
 		description: 'Call me nodey',
@@ -13,14 +15,14 @@ describe('encodings/ber/EmberNode', () => {
 		isOnline: true,
 		schemaIdentifiers: `I'm a schema identifier\nand I'm OK`,
 		templateReference: '3.2.1.2'
-	} as EmberNode
+	})
 
 	test('write and read a node', () => {
 		const writer = new Ber.Writer()
 		encodeNode(en, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeNode(reader)
+		const decoded = guarded(decodeNode(reader))
 
 		expect(decoded).toEqual(en)
 	})

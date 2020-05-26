@@ -251,9 +251,9 @@ function parameterTypetoBERTAG(parameterType: ParameterType): number {
 		case ParameterType.Boolean:
 			return BERDataTypes.BOOLEAN
 		case ParameterType.Trigger:
-			return BERDataTypes.STRING // TODO: guess
+			return BERDataTypes.STRING // TODO: this is a guess
 		case ParameterType.Enum:
-			return BERDataTypes.INTEGER // TODO: guess
+			return BERDataTypes.ENUMERATED
 		case ParameterType.Octets:
 			return BERDataTypes.OCTETSTRING
 		case ParameterType.Null:

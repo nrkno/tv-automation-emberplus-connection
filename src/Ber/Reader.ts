@@ -13,10 +13,11 @@ class ExtendedReader extends Reader {
 		super(data)
 	}
 
-	getSequence(tag: number): ExtendedReader {
-		const buf = this.readString(tag, true)
-		return new ExtendedReader(buf)
-	}
+	// This is bad. No need to create a new reader for every tag!
+	// getSequence(tag: number): ExtendedReader {
+	// 	const buf = this.readString(tag, true)
+	// 	return new ExtendedReader(buf)
+	// }
 
 	readValue(): EmberTypedValue {
 		const tag = this.peek()

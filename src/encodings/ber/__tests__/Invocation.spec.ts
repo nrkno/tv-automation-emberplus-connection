@@ -3,32 +3,34 @@ import { Invocation } from '../../../model/Invocation'
 import { encodeInvocation } from '../encoder/Invocation'
 import { decodeInvocation } from '../decoder/Invocation'
 import { ParameterType } from '../../../model/Parameter'
+import { literal } from '../../../types/types'
+import { guarded } from '../decoder/DecodeResult'
 
 describe('encodings/ber/Invocation', () => {
-	const iv = {
+	const iv = literal<Invocation>({
 		id: 45654,
 		args: [
 			{ type: ParameterType.Integer, value: -1 },
 			{ type: ParameterType.Boolean, value: false },
 			{ type: ParameterType.String, value: 'twotyfour' }
 		]
-	} as Invocation
+	})
 
-	const noArgs = {
+	const noArgs = literal<Invocation>({
 		id: 234,
 		args: []
-	} as Invocation
+	})
 
-	const noId = {
+	const noId = literal<Invocation>({
 		args: [{ type: ParameterType.Integer, value: 47 }]
-	}
+	})
 
 	test('write and read an invocation - 3 args', () => {
 		const writer = new Ber.Writer()
 		encodeInvocation(iv, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeInvocation(reader)
+		const decoded = guarded(decodeInvocation(reader))
 
 		expect(decoded).toEqual(iv)
 	})
@@ -38,7 +40,7 @@ describe('encodings/ber/Invocation', () => {
 		encodeInvocation(noArgs, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeInvocation(reader)
+		const decoded = guarded(decodeInvocation(reader))
 
 		expect(decoded).toEqual(noArgs)
 	})
@@ -48,7 +50,7 @@ describe('encodings/ber/Invocation', () => {
 		encodeInvocation(noId, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeInvocation(reader)
+		const decoded = guarded(decodeInvocation(reader))
 
 		expect(decoded).toEqual(noId)
 	})

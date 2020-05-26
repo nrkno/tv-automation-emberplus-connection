@@ -1,173 +1,199 @@
 import * as Ber from '../../../Ber'
 import { Parameter, ParameterType, ParameterImpl, ParameterAccess } from '../../../model/Parameter'
-// import { TreeImpl } from '../../../model/Tree'
-// import { EmberTreeNode } from '../../../types/types'
-// import { EmberElement } from '../../../model/EmberElement'
 import { decodeStreamDescription } from './StreamDescription'
-// import { decodeChildren } from './Tree';
-// import { ParameterBERID } from '../constants';
 import { decodeStringIntegerCollection } from './StringIntegerCollection'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	check,
+	makeResult,
+	unexpected,
+	appendErrors,
+	unknownContext,
+	skipNext
+} from './DecodeResult'
+import { StringIntegerCollection, RelativeOID } from '../../../types/types'
+import { StreamDescription } from '../../../model/StreamDescription'
+import { EmberValue } from '../../../model/EmberValue'
 
 export { decodeParameter, readParameterType }
 
-// function decodeParameter (reader: Ber.Reader): EmberTreeNode<Parameter> {
-// 	const ber = reader.getSequence(ParameterBERID)
-// 	//let _num: number | undefined = undefined
-// 	let param: Parameter | undefined = undefined
-// 	let kids: Array<EmberTreeNode<EmberElement>> = []
-// 	while (ber.remain > 0) {
-// 		const tag = ber.peek()
-// 		const seq = ber.getSequence(tag!)
+function decodeParameter(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<Parameter> {
+	reader.readSequence(Ber.BERDataTypes.SET)
 
-// 		switch (tag) {
-// 			case Ber.CONTEXT(0):
-// 				//_num = seq.readInt()
-// 				break
-// 			case Ber.CONTEXT(1):
-// 				param = decodeParameterContents(seq)
-// 				break
-// 			case Ber.CONTEXT(2):
-// 				kids = decodeChildren(seq)
-// 				break
-// 		}
-// 	}
-// 	if (!param) {
-// 		throw new Error('Decode parameter: failed to decode parameter')
-// 	}
-// 	// param.number = typeof num === 'number' ? num : -1
-// 	return new TreeImpl(param, undefined, kids)
-// }
+	let identifier: string | undefined = undefined
+	let description: string | undefined = undefined
+	let value: EmberValue | undefined = undefined
+	let minimum: number | null | undefined = undefined
+	let maximum: number | null | undefined = undefined
+	let access: ParameterAccess | undefined = undefined
+	let format: string | undefined = undefined
+	let enumeration: string | undefined = undefined
+	let factor: number | undefined = undefined
+	let isOnline: boolean | undefined = undefined
+	let formula: string | undefined = undefined
+	let step: number | undefined = undefined
+	let defaultValue: EmberValue | undefined = undefined
+	let parameterType: ParameterType | undefined = undefined
+	let streamIdentifier: number | undefined = undefined
+	let enumMap: StringIntegerCollection | undefined = undefined
+	let streamDescriptor: StreamDescription | undefined = undefined
+	let schemaIdentifiers: string | undefined = undefined
+	let templateReference: RelativeOID | undefined = undefined
 
-function decodeParameter(reader: Ber.Reader): Parameter {
-	const ber = reader.getSequence(Ber.BERDataTypes.SET)
-	const p: Parameter = {} as Parameter
-
-	while (ber.remain > 0) {
-		const tag = ber.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const seq = ber.getSequence(tag)
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				p.identifier = seq.readString(Ber.BERDataTypes.STRING)
+				identifier = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(1):
-				p.description = seq.readString(Ber.BERDataTypes.STRING)
+				description = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(2):
-				p.value = seq.readValue().value
+				value = reader.readValue().value
 				break
 			case Ber.CONTEXT(3):
-				p.minimum = seq.readValue().value as number | null
+				minimum = reader.readValue().value as number | null
 				break
 			case Ber.CONTEXT(4):
-				p.maximum = seq.readValue().value as number | null
+				maximum = reader.readValue().value as number | null
 				break
 			case Ber.CONTEXT(5):
-				p.access = readParameterAccess(seq.readInt())
+				access = appendErrors(readParameterAccess(reader.readInt(), options), errors)
 				break
 			case Ber.CONTEXT(6):
-				p.format = seq.readString(Ber.BERDataTypes.STRING)
+				format = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(7):
-				p.enumeration = seq.readString(Ber.BERDataTypes.STRING)
+				enumeration = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(8):
-				p.factor = seq.readInt()
+				factor = reader.readInt()
 				break
 			case Ber.CONTEXT(9):
-				p.isOnline = seq.readBoolean()
+				isOnline = reader.readBoolean()
 				break
 			case Ber.CONTEXT(10):
-				p.formula = seq.readString(Ber.BERDataTypes.STRING)
+				formula = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(11):
-				p.step = seq.readInt()
+				step = reader.readInt()
 				break
 			case Ber.CONTEXT(12):
-				p.defaultValue = seq.readValue().value // Write value uses type
+				defaultValue = reader.readValue().value // Write value uses type
 				break
 			case Ber.CONTEXT(13):
-				p.parameterType = readParameterType(seq.readInt())
+				parameterType = appendErrors(readParameterType(reader.readInt(), options), errors)
 				break
 			case Ber.CONTEXT(14):
-				p.streamIdentifier = seq.readInt()
+				streamIdentifier = reader.readInt()
 				break
 			case Ber.CONTEXT(15):
-				p.enumMap = decodeStringIntegerCollection(seq)
+				enumMap = appendErrors(decodeStringIntegerCollection(reader, options), errors)
 				break
 			case Ber.CONTEXT(16):
-				p.streamDescriptor = decodeStreamDescription(seq)
+				streamDescriptor = appendErrors(decodeStreamDescription(reader, options), errors)
 				break
 			case Ber.CONTEXT(17):
-				p.schemaIdentifiers = seq.readString(Ber.BERDataTypes.STRING)
+				schemaIdentifiers = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(18):
-				p.templateReference = seq.readString(Ber.BERDataTypes.STRING)
+				templateReference = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'decode parameter', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
+	parameterType = check(
+		parameterType,
+		'decode parameter',
+		'parameterType',
+		ParameterType.Null,
+		errors,
+		options
+	)
 
-	return new ParameterImpl(
-		p.parameterType,
-		p.identifier,
-		p.description,
-		p.value,
-		p.maximum,
-		p.minimum,
-		p.access,
-		p.format,
-		p.enumeration,
-		p.factor,
-		p.isOnline,
-		p.formula,
-		p.step,
-		p.defaultValue,
-		p.streamIdentifier,
-		p.enumMap,
-		p.streamDescriptor,
-		p.schemaIdentifiers,
-		p.templateReference
+	return makeResult(
+		new ParameterImpl(
+			parameterType,
+			identifier,
+			description,
+			value,
+			maximum,
+			minimum,
+			access,
+			format,
+			enumeration,
+			factor,
+			isOnline,
+			formula,
+			step,
+			defaultValue,
+			streamIdentifier,
+			enumMap,
+			streamDescriptor,
+			schemaIdentifiers,
+			templateReference
+		),
+		errors
 	)
 }
 
-function readParameterAccess(value: number): ParameterAccess {
+function readParameterAccess(value: number, options: DecodeOptions): DecodeResult<ParameterAccess> {
 	switch (value) {
 		case 0:
-			return ParameterAccess.None
+			return makeResult(ParameterAccess.None)
 		case 1:
-			return ParameterAccess.Read
+			return makeResult(ParameterAccess.Read)
 		case 2:
-			return ParameterAccess.Write
+			return makeResult(ParameterAccess.Write)
 		case 3:
-			return ParameterAccess.ReadWrite
+			return makeResult(ParameterAccess.ReadWrite)
 		default:
-			throw new Error(``)
+			return unexpected(
+				[],
+				'read parameter access',
+				`unexpected parameter access '${value}'`,
+				ParameterAccess.ReadWrite,
+				options
+			)
 	}
 }
 
-function readParameterType(value: number): ParameterType {
+function readParameterType(value: number, options: DecodeOptions): DecodeResult<ParameterType> {
 	switch (value) {
 		case 0:
-			return ParameterType.Null
+			return makeResult(ParameterType.Null)
 		case 1:
-			return ParameterType.Integer
+			return makeResult(ParameterType.Integer)
 		case 2:
-			return ParameterType.Real
+			return makeResult(ParameterType.Real)
 		case 3:
-			return ParameterType.String
+			return makeResult(ParameterType.String)
 		case 4:
-			return ParameterType.Boolean
+			return makeResult(ParameterType.Boolean)
 		case 5:
-			return ParameterType.Trigger
+			return makeResult(ParameterType.Trigger)
 		case 6:
-			return ParameterType.Enum
+			return makeResult(ParameterType.Enum)
 		case 7:
-			return ParameterType.Octets
+			return makeResult(ParameterType.Octets)
 		default:
-			throw new Error(``)
+			return unexpected(
+				[],
+				'read parameter type',
+				`unexpected parameter type '${value}'`,
+				ParameterType.Null,
+				options
+			)
 	}
 }

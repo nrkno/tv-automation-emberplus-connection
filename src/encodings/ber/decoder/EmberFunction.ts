@@ -1,110 +1,86 @@
 import * as Ber from '../../../Ber'
 // import { EmberFunction, EmberFunctionImpl } from '../../../model/EmberFunction'
-import { EmberFunction } from '../../../model/EmberFunction'
+import { EmberFunction, EmberFunctionImpl } from '../../../model/EmberFunction'
 import { decodeFunctionArgument } from './FunctionArgument'
-// import { EmberTreeNode } from '../../../types/types'
-// import { EmberElement } from '../../../model/EmberElement'
-// import { TreeImpl } from '../../../model/Tree'
-// import { decodeChildren } from './Tree'
-// import { FunctionBERID } from '../constants'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	unknownContext,
+	makeResult,
+	appendErrors,
+	skipNext
+} from './DecodeResult'
+import { FunctionArgument } from '../../../model/FunctionArgument'
+import { RelativeOID } from '../../../types/types'
 
-// export { decodeFunction, decodeFunctionContent }
 export { decodeFunctionContent }
 
-// function decodeFunction(reader: Ber.Reader): EmberTreeNode<EmberFunction> {
-// 	const ber = reader.getSequence(FunctionBERID)
-// 	let number: number | null = null
-// 	let contents: EmberFunction | null = null
-// 	let kids: Array<EmberTreeNode<EmberElement>> | undefined = undefined
-// 	while (ber.remain) {
-// 		const tag = ber.peek()
-// 		const seq = ber.getSequence(tag!)
-// 		switch (tag) {
-// 			case Ber.CONTEXT(0):
-// 				number = seq.readInt()
-// 			  break
-// 			case Ber.CONTEXT(1):
-// 				contents = decodeFunctionContent(seq)
-// 				break
-// 			case Ber.CONTEXT(2):
-// 				kids = decodeChildren(seq)
-// 			  break
-// 			default:
-// 			  throw new Error(``)
-// 		}
-// 	}
-// 	if (number === null) {
-// 		throw new Error(``)
-// 	}
-// 	if (contents === null) {
-// 		return new TreeImpl(
-// 			new EmberFunctionImpl(),
-// 			undefined,
-// 			kids
-// 		)
-// 	}
-// 	return new TreeImpl(
-// 		new EmberFunctionImpl(
-// 			contents.identifier,
-// 			contents.description,
-// 			contents.args,
-// 			contents.result,
-// 			contents.templateReference
-// 		),
-// 		undefined,
-// 		kids
-// 	)
-// }
-
-function decodeFunctionContent(reader: Ber.Reader): EmberFunction {
-	const f: EmberFunction = {} as EmberFunction
-	const ber = reader.getSequence(Ber.BERDataTypes.SET)
-	let readArgSeq: Ber.Reader
-	let readResSeq: Ber.Reader
-	while (ber.remain > 0) {
-		const tag = ber.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const seq = ber.getSequence(tag)
+function decodeFunctionContent(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<EmberFunction> {
+	reader.readSequence(Ber.BERDataTypes.SET)
+	let identifier: string | undefined = undefined
+	let description: string | undefined = undefined
+	let args: Array<FunctionArgument> | undefined = undefined
+	let result: Array<FunctionArgument> | undefined = undefined
+	let templateReference: RelativeOID | undefined = undefined
+	let seqOffset: number
+	let resOffset: number
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				f.identifier = seq.readString(Ber.BERDataTypes.STRING)
+				identifier = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(1):
-				f.description = seq.readString(Ber.BERDataTypes.STRING)
+				description = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(2):
-				f.args = []
-				readArgSeq = seq.getSequence(Ber.BERDataTypes.SEQUENCE)
-				while (readArgSeq.remain > 0) {
-					const argTag = readArgSeq.peek() // TODO check this
+				args = []
+				reader.readSequence(Ber.BERDataTypes.SEQUENCE)
+				seqOffset = reader.offset + reader.length
+				while (reader.offset < seqOffset) {
+					const argTag = reader.readSequence()
 					if (argTag !== Ber.CONTEXT(0)) {
-						throw new Error(``)
+						unknownContext(errors, 'decode function content: arguments', argTag, options)
+						skipNext(reader)
+						continue
 					}
-					const argSeq = readArgSeq.getSequence(Ber.CONTEXT(0))
-					f.args.push(decodeFunctionArgument(argSeq))
+					const argEl = appendErrors(decodeFunctionArgument(reader, options), errors)
+					args.push(argEl)
 				}
 				break
 			case Ber.CONTEXT(3):
-				f.result = []
-				readResSeq = seq.getSequence(Ber.BERDataTypes.SEQUENCE)
-				while (readResSeq.remain > 0) {
-					const resTag = readResSeq.peek()
+				result = []
+				reader.readSequence(Ber.BERDataTypes.SEQUENCE)
+				resOffset = reader.offset + reader.length
+				while (reader.offset < resOffset) {
+					const resTag = reader.readSequence()
 					if (resTag !== Ber.CONTEXT(0)) {
-						throw new Error(``)
+						unknownContext(errors, 'decode function content: result', resTag, options)
+						skipNext(reader)
+						continue
 					}
-					const resSeq = readResSeq.getSequence(Ber.CONTEXT(0))
-					f.result.push(decodeFunctionArgument(resSeq))
+					const resEl = appendErrors(decodeFunctionArgument(reader, options), errors)
+					result.push(resEl)
 				}
 				break
 			case Ber.CONTEXT(4):
-				f.templateReference = seq.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
+				templateReference = reader.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'decode function content', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
 
-	return f
+	return makeResult(
+		new EmberFunctionImpl(identifier, description, args, result, templateReference),
+		errors
+	)
 }

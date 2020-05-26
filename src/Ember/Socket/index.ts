@@ -1,3 +1,3 @@
-const S101Client = null
+import S101Client from './S101Client'
 
 export { S101Client }

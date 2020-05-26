@@ -3,32 +3,34 @@ import { FunctionArgument } from '../../../model/FunctionArgument'
 import { encodeFunctionArgument } from '../encoder/FunctionArgument'
 import { decodeFunctionArgument } from '../decoder/FunctionArgument'
 import { ParameterType } from '../../../model/Parameter'
+import { literal } from '../../../types/types'
+import { guarded } from '../decoder/DecodeResult'
 
 describe('encoders/ber/FunctionArgument', () => {
-	const fa = {
+	const fa = literal<FunctionArgument>({
 		type: ParameterType.String,
 		name: 'fred'
-	} as FunctionArgument
+	})
 
 	test('write and read function argument', () => {
 		const writer = new Ber.Writer()
 		encodeFunctionArgument(fa, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeFunctionArgument(reader)
+		const decoded = guarded(decodeFunctionArgument(reader))
 
 		expect(decoded).toEqual(fa)
 	})
 
 	test('write and read function argument', () => {
-		const noName = {
+		const noName = literal<FunctionArgument>({
 			type: ParameterType.Boolean
-		} as FunctionArgument
+		})
 		const writer = new Ber.Writer()
 		encodeFunctionArgument(noName, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeFunctionArgument(reader)
+		const decoded = guarded(decodeFunctionArgument(reader))
 
 		expect(decoded).toEqual(noName)
 	})

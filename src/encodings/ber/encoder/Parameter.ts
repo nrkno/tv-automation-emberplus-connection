@@ -10,20 +10,31 @@ export function encodeParameter(parameter: Parameter, writer: Ber.Writer): void 
 
 	const writeValue = (value: EmberValue): void => {
 		switch (parameter.parameterType) {
-			case ParameterType.Real:
-				writer.writeReal(value as number, Ber.BERDataTypes.REAL)
+			case ParameterType.Null:
+				writer.writeNull()
 				break
 			case ParameterType.Integer:
-				writer.writeInt(value as number, Ber.BERDataTypes.INTEGER)
+				writer.writeInt(Number(value), Ber.BERDataTypes.INTEGER)
+				break
+			case ParameterType.Real:
+				writer.writeReal(Number(value), Ber.BERDataTypes.REAL)
+				break
+			case ParameterType.String:
+				writer.writeString(value + '', Ber.BERDataTypes.STRING)
 				break
 			case ParameterType.Boolean:
 				writer.writeBoolean(value as boolean, Ber.BERDataTypes.BOOLEAN)
+				break
+			// case ParameterType.Trigger:
+			// 	break
+			case ParameterType.Enum:
+				writer.writeEnumeration(value as number, Ber.BERDataTypes.ENUMERATED)
 				break
 			case ParameterType.Octets:
 				writer.writeBuffer(value as Buffer, Ber.BERDataTypes.OCTETSTRING)
 				break
 			default:
-				writer.writeString(value as string, Ber.BERDataTypes.STRING)
+				writer.writeValue(value)
 		}
 	}
 

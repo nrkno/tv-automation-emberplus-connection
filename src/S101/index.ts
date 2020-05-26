@@ -1,3 +1,3 @@
-const S101 = {}
+import S101Codec from './S101Codec'
 
-export { S101 }
+export { S101Codec }

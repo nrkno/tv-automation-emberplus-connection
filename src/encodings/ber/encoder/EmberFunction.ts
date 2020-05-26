@@ -1,7 +1,6 @@
 import * as Ber from '../../../Ber'
 import { EmberFunction } from '../../../model/EmberFunction'
 import { encodeFunctionArgument } from './FunctionArgument'
-import { encodeRelativeOID } from './RelativeOID'
 
 export function encodeFunction(el: EmberFunction, writer: Ber.Writer): void {
 	// The function itself is a node, and then the contents are another node I think. This just encodes the contents:
@@ -44,10 +43,9 @@ export function encodeFunction(el: EmberFunction, writer: Ber.Writer): void {
 	}
 
 	if (el.templateReference != null) {
-		// writer.startSequence(Ber.CONTEXT(4))
-		// writer.writeRelativeOID(el.templateReference, Ber.BERDataTypes.RELATIVE_OID)
-		// writer.endSequence() // Ber.CONTEXT(3)
-		encodeRelativeOID(el.templateReference, writer)
+		writer.startSequence(Ber.CONTEXT(4))
+		writer.writeRelativeOID(el.templateReference, Ber.BERDataTypes.RELATIVE_OID)
+		writer.endSequence() // Ber.CONTEXT(4)
 	}
 
 	writer.endSequence() // Ber.EMBER_SET

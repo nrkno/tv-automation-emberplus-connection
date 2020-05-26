@@ -1,7 +1,7 @@
 import { EmberClient } from './Ember/Client/index'
 import { EmberLib } from './Ember/Lib/index'
 import { EmberServer, ServerEvents } from './Ember/Server/index'
-import { S101 } from './S101/index'
+import { S101Codec } from './S101/index'
 import { S101Client } from './Ember/Socket/index'
 // import { EmberTreeNode, TreeElement } from './types/types'
 import { berEncode, berDecode } from './encodings/ber/index'
@@ -30,7 +30,7 @@ export {
 	EmberLib,
 	EmberServer,
 	ServerEvents,
-	S101,
+	S101Codec,
 	S101Client,
 	berEncode,
 	berDecode

@@ -18,7 +18,9 @@ export {
 	RootType,
 	MinMax,
 	StringIntegerCollection,
-	RelativeOID
+	RelativeOID,
+	literal,
+	Collection
 }
 
 type EmberTreeNode<T extends EmberElement> = NumberedTreeNode<T>
@@ -29,7 +31,7 @@ type RootElement =
 	| QualifiedElement<Matrix>
 	| QualifiedElement<EmberFunction>
 	| QualifiedElement<Template>
-type Root = Array<RootElement> | Array<StreamEntry> | InvocationResult
+type Root = Collection<RootElement> | Collection<StreamEntry> | InvocationResult
 
 enum RootType {
 	Elements,
@@ -40,3 +42,9 @@ enum RootType {
 type MinMax = number | null
 type StringIntegerCollection = Map<string, number>
 type RelativeOID = string
+
+function literal<T>(arg: T): T {
+	return arg
+}
+
+type Collection<T> = { [index: number]: T }

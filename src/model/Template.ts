@@ -22,7 +22,6 @@ interface Template extends EmberElement {
 class TemplateImpl implements Template {
 	public readonly type: ElementType.Template = ElementType.Template
 	constructor(
-		public number: number,
 		public element?: NumberedTreeNode<Parameter | EmberNode | Matrix | EmberFunction>,
 		public description?: string
 	) {}

@@ -1,94 +1,66 @@
 import * as Ber from '../../../Ber'
 import { EmberNode, EmberNodeImpl } from '../../../model/EmberNode'
-// import { decodeChildren } from './Tree'
-// import { EmberTreeNode } from '../../../types/types'
-// import { TreeImpl } from '../../../model/Tree'
-// import { EmberElement } from '../../../model/EmberElement'
-// import { NodeBERID } from '../constants'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	unknownContext,
+	makeResult,
+	skipNext
+} from './DecodeResult'
+import { RelativeOID } from '../../../types/types'
 
 export { decodeNode }
 
-// function decodeNode(reader: Ber.Reader): EmberTreeNode<EmberNode> {
-// 	const ber = reader.getSequence(NodeBERID)
-// 	let number: number | null = null
-// 	let contents: EmberNode | null = null
-// 	let kids: Array<EmberTreeNode<EmberElement>> | undefined = undefined
-// 	while (ber.remain > 0) {
-// 		const tag = ber.peek()
-// 		const seq = ber.getSequence(tag!)
-// 		switch (tag) {
-// 			case Ber.CONTEXT(0):
-// 				number = seq.readInt()
-// 			  break
-// 			case Ber.CONTEXT(1):
-// 				contents = decodeNodeContents(seq)
-// 			  break
-// 			case Ber.CONTEXT(2):
-// 				kids = decodeChildren(seq)
-// 				break
-// 			default:
-// 				throw new Error(``)
-// 		}
-// 	}
-// 	if (number === null) {
-// 		throw new Error(``)
-// 	}
-// 	if (contents === null) {
-// 		return new TreeImpl(
-// 			new EmberNodeImpl(),
-// 			undefined,
-// 			kids)
-// 	}
-// 	return new TreeImpl(new EmberNodeImpl(
-// 			contents.identifier,
-// 			contents.description,
-// 			contents.isRoot,
-// 			contents.isOnline,
-// 			contents.schemaIdentifiers,
-// 			contents.templateReference
-// 		),
-// 		undefined,
-// 		kids)
-// }
-
-function decodeNode(reader: Ber.Reader): EmberNode {
-	const n: EmberNode = {} as EmberNode
-	const ber = reader.getSequence(Ber.BERDataTypes.SET)
-	while (ber.remain > 0) {
-		const tag = ber.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const seq = ber.getSequence(tag)
+function decodeNode(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<EmberNode> {
+	reader.readSequence(Ber.BERDataTypes.SET)
+	let identifier: string | undefined = undefined
+	let description: string | undefined = undefined
+	let isRoot: boolean | undefined = undefined
+	let isOnline: boolean | undefined = undefined
+	let schemaIdentifiers: string | undefined = undefined
+	let templateReference: RelativeOID | undefined = undefined
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				n.identifier = seq.readString(Ber.BERDataTypes.STRING)
+				identifier = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(1):
-				n.description = seq.readString(Ber.BERDataTypes.STRING)
+				description = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(2):
-				n.isRoot = seq.readBoolean()
+				isRoot = reader.readBoolean()
 				break
 			case Ber.CONTEXT(3):
-				n.isOnline = seq.readBoolean()
+				isOnline = reader.readBoolean()
 				break
 			case Ber.CONTEXT(4):
-				n.schemaIdentifiers = seq.readString(Ber.BERDataTypes.STRING)
+				schemaIdentifiers = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(5):
-				n.templateReference = seq.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
+				templateReference = reader.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'deocde node', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
-	return new EmberNodeImpl(
-		n.identifier,
-		n.description,
-		n.isRoot,
-		n.isOnline,
-		n.schemaIdentifiers,
-		n.templateReference
+	return makeResult(
+		new EmberNodeImpl(
+			identifier,
+			description,
+			isRoot,
+			isOnline,
+			schemaIdentifiers,
+			templateReference
+		),
+		errors
 	)
 }

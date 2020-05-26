@@ -1,47 +1,72 @@
 import * as Ber from '../../../Ber'
 import { StringIntegerCollection } from '../../../types/types'
 import { StringIntegerCollectionBERID, StringIntegerPairBERID } from '../constants'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	makeResult,
+	unknownContext,
+	appendErrors,
+	check,
+	skipNext
+} from './DecodeResult'
 
 export { decodeStringIntegerCollection }
 
-function decodeStringIntegerCollection(reader: Ber.Reader): StringIntegerCollection {
-	const seq = reader.getSequence(StringIntegerCollectionBERID)
+function decodeStringIntegerCollection(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<StringIntegerCollection> {
+	reader.readSequence(StringIntegerCollectionBERID)
 	const collection: StringIntegerCollection = new Map<string, number>()
-	while (seq.remain > 0) {
-		const tag = seq.peek()
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		if (tag !== Ber.CONTEXT(0)) {
-			throw new Error(``)
+			unknownContext(errors, 'decode string integer collection', tag, options)
+			skipNext(reader)
+			continue
 		}
-		const data = seq.getSequence(Ber.CONTEXT(0))
-		const pair = decodeStringIntegerPair(data)
+		const pair = appendErrors(decodeStringIntegerPair(reader, options), errors)
 		collection.set(pair.key, pair.value)
 	}
-	return collection
+	return makeResult(collection, errors)
 }
 
-function decodeStringIntegerPair(reader: Ber.Reader): { key: string; value: number } {
+function decodeStringIntegerPair(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<{ key: string; value: number }> {
 	let key: string | null = null
 	let value: number | null = null
-	const seq = reader.getSequence(StringIntegerPairBERID)
-	while (seq.remain > 0) {
-		const tag = seq.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const dataSeq = seq.getSequence(tag)
+	const errors: Array<Error> = []
+	reader.readSequence(StringIntegerPairBERID)
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				key = dataSeq.readString(Ber.BERDataTypes.STRING)
+				key = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			case Ber.CONTEXT(1):
-				value = dataSeq.readInt()
+				value = reader.readInt()
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'deocde string integer pair', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
-	if (key === null || value === null) {
-		throw new Error(``)
-	}
-	return { key, value }
+	key = check(
+		key,
+		'decode string integer pair',
+		'key',
+		`key${(Math.random() * 1000000) | 0}`,
+		errors,
+		options
+	)
+	value = check(value, 'decode string integer pair', 'value', -1, errors, options)
+	return makeResult({ key, value }, errors)
 }

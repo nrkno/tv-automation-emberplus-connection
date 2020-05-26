@@ -2,47 +2,56 @@ import * as Ber from '../../../Ber'
 import { InvocationResult, InvocationResultImpl } from '../../../model/InvocationResult'
 import { EmberTypedValue } from '../../../model/EmberTypedValue'
 import { InvocationResultBERID } from '../constants'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	makeResult,
+	unknownContext,
+	check,
+	skipNext
+} from './DecodeResult'
 
-export function decodeInvocationResult(reader: Ber.Reader): InvocationResult {
-	const ber = reader.getSequence(InvocationResultBERID)
+export function decodeInvocationResult(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<InvocationResult> {
+	reader.readSequence(InvocationResultBERID)
 	let id: number | null = null
 	let success: boolean | undefined = undefined
 	let result: Array<EmberTypedValue> | undefined = undefined
-	let resSeq: Ber.Reader
-	while (ber.remain > 0) {
-		const tag = ber.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const seq = ber.getSequence(tag)
+	let seqOffset: number
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				id = seq.readInt()
+				id = reader.readInt()
 				break
 			case Ber.CONTEXT(1):
-				success = seq.readBoolean()
+				success = reader.readBoolean()
 				break
 			case Ber.CONTEXT(2):
 				result = []
-				resSeq = seq.getSequence(Ber.BERDataTypes.SEQUENCE)
-				while (resSeq.remain > 0) {
-					const resTag = resSeq.peek()
-					if (resTag === null) {
-						throw new Error(``)
+				reader.readSequence(Ber.BERDataTypes.SEQUENCE)
+				seqOffset = reader.offset + reader.length
+				while (reader.offset < seqOffset) {
+					const resTag = reader.readSequence()
+					if (resTag === null || resTag !== Ber.CONTEXT(0)) {
+						unknownContext(errors, 'decode invocation result: result', resTag, options)
+						skipNext(reader)
+						continue
 					}
-					const faSeq = resSeq.getSequence(resTag)
-					if (resTag !== Ber.CONTEXT(0)) {
-						throw new Error(``)
-					}
-					result.push(faSeq.readValue())
+					result.push(reader.readValue())
 				}
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'decode invocation result', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
-	if (id === null) {
-		throw new Error(``)
-	}
-	return new InvocationResultImpl(id, success, result)
+	id = check(id, 'decode invocation result', 'id', -1, errors, options)
+	return makeResult(new InvocationResultImpl(id, success, result), errors)
 }

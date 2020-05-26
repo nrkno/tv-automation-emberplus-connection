@@ -2,6 +2,7 @@ import * as Ber from '../../../Ber'
 import { StringIntegerCollection } from '../../../types/types'
 import { encodeStringIntegerCollection } from '../encoder/StringIntegerCollection'
 import { decodeStringIntegerCollection } from '../decoder/StringIntegerCollection'
+import { guarded } from '../decoder/DecodeResult'
 
 describe('encodings/ber/StringIntegerCollection', () => {
 	const sic: StringIntegerCollection = new Map<string, number>([
@@ -15,7 +16,7 @@ describe('encodings/ber/StringIntegerCollection', () => {
 		encodeStringIntegerCollection(sic, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeStringIntegerCollection(reader)
+		const decoded = guarded(decodeStringIntegerCollection(reader))
 
 		expect(decoded).toEqual(sic)
 	})
@@ -27,7 +28,7 @@ describe('encodings/ber/StringIntegerCollection', () => {
 		encodeStringIntegerCollection(emptySic, writer)
 		console.log(writer.buffer)
 		const reader = new Ber.Reader(writer.buffer)
-		const decoded = decodeStringIntegerCollection(reader)
+		const decoded = guarded(decodeStringIntegerCollection(reader))
 
 		expect(decoded).toEqual(emptySic)
 	})

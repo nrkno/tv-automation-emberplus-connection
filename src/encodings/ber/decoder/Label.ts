@@ -1,36 +1,44 @@
 import * as Ber from '../../../Ber'
 import { Label, LabelImpl } from '../../../model/Label'
 import { LabelBERID } from '../constants'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	unknownContext,
+	check,
+	makeResult,
+	skipNext
+} from './DecodeResult'
 
 export { decodeLabel }
 
-function decodeLabel(reader: Ber.Reader): Label {
-	const ber = reader.getSequence(LabelBERID)
+function decodeLabel(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<Label> {
+	reader.readSequence(LabelBERID)
 	let basePath: string | null = null
 	let description: string | null = null
-	while (ber.remain > 0) {
-		const tag = ber.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const seq = ber.getSequence(tag)
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				basePath = seq.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
+				basePath = reader.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
 				break
 			case Ber.CONTEXT(1):
-				description = seq.readString(Ber.BERDataTypes.STRING)
+				description = reader.readString(Ber.BERDataTypes.STRING)
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'decode label', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
-	if (basePath === null) {
-		throw new Error(``)
-	}
-	if (description === null) {
-		throw new Error(``)
-	}
+	basePath = check(basePath, 'decode label', 'basePath', '', errors, options)
+	description = check(description, 'decode label', 'description', '', errors, options)
 
-	return new LabelImpl(basePath, description)
+	return makeResult(new LabelImpl(basePath, description), errors)
 }

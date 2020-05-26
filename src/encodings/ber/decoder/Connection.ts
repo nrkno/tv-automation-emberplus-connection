@@ -6,28 +6,40 @@ import {
 	ConnectionImpl
 } from '../../../model/Connection'
 import { ConnectionBERID } from '../constants'
+import {
+	DecodeOptions,
+	defaultDecode,
+	DecodeResult,
+	unknownContext,
+	check,
+	makeResult,
+	unexpected,
+	appendErrors,
+	skipNext
+} from './DecodeResult'
 
 export { decodeConnection }
 
-function decodeConnection(reader: Ber.Reader): Connection {
-	const ber = reader.getSequence(ConnectionBERID)
+function decodeConnection(
+	reader: Ber.Reader,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<Connection> {
+	reader.readSequence(ConnectionBERID)
 	let target: number | null = null
 	let sources: Array<number> | undefined = undefined
 	let operation: ConnectionOperation | undefined = undefined
 	let disposition: ConnectionDisposition | undefined = undefined
 	let encodedSources: string
-	while (ber.remain > 0) {
-		const tag = ber.peek()
-		if (tag === null) {
-			throw new Error(``)
-		}
-		const seq = ber.getSequence(tag)
+	const errors: Array<Error> = []
+	const endOffset = reader.offset + reader.length
+	while (reader.offset < endOffset) {
+		const tag = reader.readSequence()
 		switch (tag) {
 			case Ber.CONTEXT(0):
-				target = seq.readInt()
+				target = reader.readInt()
 				break
 			case Ber.CONTEXT(1):
-				encodedSources = seq.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
+				encodedSources = reader.readRelativeOID(Ber.BERDataTypes.RELATIVE_OID)
 				if (encodedSources.length === 0) {
 					sources = []
 				} else {
@@ -35,45 +47,63 @@ function decodeConnection(reader: Ber.Reader): Connection {
 				}
 				break
 			case Ber.CONTEXT(2):
-				operation = readConnectionOperation(seq.readInt())
+				operation = appendErrors(readConnectionOperation(reader.readInt(), options), errors)
 				break
 			case Ber.CONTEXT(3):
-				disposition = readConnectionDisposition(seq.readInt())
+				disposition = appendErrors(readConnectionDisposition(reader.readInt(), options), errors)
 				break
 			default:
-				throw new Error(``)
+				unknownContext(errors, 'decode connection', tag, options)
+				skipNext(reader)
+				break
 		}
 	}
-	if (target === null) {
-		throw new Error(``)
-	}
-	return new ConnectionImpl(target, sources, operation, disposition)
+	target = check(target, 'deocde connection', 'target', -1, errors, options)
+	return makeResult(new ConnectionImpl(target, sources, operation, disposition), errors)
 }
 
-function readConnectionOperation(value: number): ConnectionOperation {
+function readConnectionOperation(
+	value: number,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<ConnectionOperation> {
 	switch (value) {
 		case 0:
-			return ConnectionOperation.Absolute
+			return makeResult(ConnectionOperation.Absolute)
 		case 1:
-			return ConnectionOperation.Connect
+			return makeResult(ConnectionOperation.Connect)
 		case 2:
-			return ConnectionOperation.Disconnect
+			return makeResult(ConnectionOperation.Disconnect)
 		default:
-			throw new Error(``)
+			return unexpected(
+				[],
+				'read connection options',
+				`unexpected connection operation '${value}'`,
+				ConnectionOperation.Absolute,
+				options
+			)
 	}
 }
 
-function readConnectionDisposition(value: number): ConnectionDisposition {
+function readConnectionDisposition(
+	value: number,
+	options: DecodeOptions = defaultDecode
+): DecodeResult<ConnectionDisposition> {
 	switch (value) {
 		case 0:
-			return ConnectionDisposition.Tally
+			return makeResult(ConnectionDisposition.Tally)
 		case 1:
-			return ConnectionDisposition.Modified
+			return makeResult(ConnectionDisposition.Modified)
 		case 2:
-			return ConnectionDisposition.Pending
+			return makeResult(ConnectionDisposition.Pending)
 		case 3:
-			return ConnectionDisposition.Locked
+			return makeResult(ConnectionDisposition.Locked)
 		default:
-			throw new Error(``)
+			return unexpected(
+				[],
+				'read connection options',
+				`unexpected connection operation '${value}'`,
+				ConnectionDisposition.Tally,
+				options
+			)
 	}
 }

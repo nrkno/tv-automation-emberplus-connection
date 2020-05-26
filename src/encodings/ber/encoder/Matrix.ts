@@ -2,7 +2,6 @@ import * as Ber from '../../../Ber'
 import { Matrix, MatrixType, MatrixAddressingMode } from '../../../model/Matrix'
 import { ElementType } from '../../../model/EmberElement'
 import { encodeLabel } from './Label'
-import { encodeRelativeOID } from './RelativeOID'
 import { RelativeOID } from '../../../types/types'
 import { TargetBERID, SourceBERID } from '../constants'
 
@@ -37,7 +36,10 @@ export function encodeMatrix(matrix: Matrix, writer: Ber.Writer): void {
 		writer.startSequence(Ber.CONTEXT(8))
 		const param = Number(matrix.parametersLocation)
 		if (isNaN(param)) {
-			encodeRelativeOID(matrix.parametersLocation as RelativeOID, writer)
+			writer.writeRelativeOID(
+				matrix.parametersLocation as RelativeOID,
+				Ber.BERDataTypes.RELATIVE_OID
+			)
 		} else {
 			writer.writeInt(param)
 		}
@@ -61,10 +63,9 @@ export function encodeMatrix(matrix: Matrix, writer: Ber.Writer): void {
 	writer.writeIfDefined(matrix.schemaIdentifiers, writer.writeString, 11, Ber.BERDataTypes.STRING)
 
 	if (matrix.templateReference != null) {
-		encodeRelativeOID(matrix.templateReference, writer)
-		// writer.startSequence(Ber.CONTEXT(12));
-		// writer.writeRelativeOID(matrix.templateReference, Ber.BERDataTypes.RELATIVE_OID);
-		// writer.endSequence();
+		writer.startSequence(Ber.CONTEXT(12))
+		writer.writeRelativeOID(matrix.templateReference, Ber.BERDataTypes.RELATIVE_OID)
+		writer.endSequence()
 	}
 
 	writer.endSequence()
