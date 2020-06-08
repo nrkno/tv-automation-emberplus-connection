@@ -13,8 +13,9 @@ import {
 	unknownContext,
 	skipNext
 } from './DecodeResult'
-import { EmberValue, StringIntegerCollection, RelativeOID } from '../../../types/types'
+import { StringIntegerCollection, RelativeOID } from '../../../types/types'
 import { StreamDescription } from '../../../model/StreamDescription'
+import { EmberValue } from '../../../model/EmberValue'
 
 export { decodeParameter, readParameterType }
 

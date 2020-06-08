@@ -4,7 +4,8 @@ import { Writer, WriterOptions } from 'asn1'
 import { CONTEXT, UNIVERSAL } from './functions'
 import { BERDataTypes } from './BERDataTypes'
 import { Parameter, ParameterType, isParameter } from '../model/Parameter'
-import { EmberValue, EmberTypedValue } from '../types/types'
+import { EmberValue } from '../model/EmberValue'
+import { EmberTypedValue } from '../model/EmberTypedValue'
 
 export { ExtendedWriter as Writer }
 

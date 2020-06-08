@@ -1,6 +1,6 @@
 import * as Ber from '../../../Ber'
 import { Parameter, ParameterType, ParameterAccess } from '../../../model/Parameter'
-import { EmberValue } from '../../../types/types'
+import { EmberValue } from '../../../model/EmberValue'
 import { encodeStringIntegerCollection } from './StringIntegerCollection'
 import { encodeStreamDescription } from './StreamDescription'
 // import { elementTypeToInt } from './Matrix'

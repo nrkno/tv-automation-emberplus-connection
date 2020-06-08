@@ -1,6 +1,6 @@
 import { EmberElement } from '../model/EmberElement'
 import { EmberFunction } from '../model/EmberFunction'
-import { Parameter, ParameterType } from '../model/Parameter'
+import { Parameter } from '../model/Parameter'
 import { Template } from '../model/Template'
 import { Matrix } from '../model/Matrix'
 import { EmberNode } from '../model/EmberNode'
@@ -13,13 +13,11 @@ export {
 	NumberedTreeNode,
 	QualifiedElement,
 	EmberTreeNode,
-	EmberValue,
-	EmberTypedValue,
 	Root,
 	RootElement,
+	RootType,
 	MinMax,
 	StringIntegerCollection,
-	RootType,
 	RelativeOID,
 	literal,
 	Collection
@@ -39,13 +37,6 @@ enum RootType {
 	Elements,
 	Streams,
 	InvocationResult
-}
-
-// number is either Integer64 or REAL
-type EmberValue = number | string | boolean | Buffer | null
-interface EmberTypedValue {
-	type: ParameterType
-	value: EmberValue
 }
 
 type MinMax = number | null

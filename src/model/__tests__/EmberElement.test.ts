@@ -51,6 +51,30 @@ describe('model/EmberElement', () => {
 			})
 		})
 
+		test('should pass for Command type', () => {
+			const actual = isEmberElement({ type: ElementType.Command })
+
+			expect(actual).toBe(true)
+		})
+
+		test('should pass for Matrix type', () => {
+			const actual = isEmberElement({ type: ElementType.Matrix })
+
+			expect(actual).toBe(true)
+		})
+
+		test('should pass for Function type', () => {
+			const actual = isEmberElement({ type: ElementType.Function })
+
+			expect(actual).toBe(true)
+		})
+
+		test('should pass for Template type', () => {
+			const actual = isEmberElement({ type: ElementType.Template })
+
+			expect(actual).toBe(true)
+		})
+
 		describe('Missing/invalid parameter type property', () => {
 			test('should fail with invalid type property', () => {
 				const actual = isEmberElement({ type: -47, number: 42 })
