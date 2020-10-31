@@ -1,5 +1,7 @@
 # Sofie: The Modern TV News Studio Automation System (Ember+ Connection)
 
+_Note: this fork is tested with NodeJS version 8.12 but is not guaranteed to contain the latest updates so use with caution_
+
 A TyepScript implementation of [Lawo's Ember+](https://github.com/Lawo/ember-plus) control protocol for Node.
 
 It has been tested with Lawo Ruby, Lawo R3lay and Lawo MxGUI.

@@ -3,7 +3,7 @@
 	"version": "0.0.4",
 	"description": "Javascript implementation of the Ember+ automation protocol",
 	"engines": {
-		"node": ">=10.20.1"
+		"node": ">=8.12.0"
 	},
 	"files": [
 		"dist/**/*"
